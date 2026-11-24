@@ -2,7 +2,7 @@
 
 Ready-made commands, skills and helper agents for **Claude Code**.
 
-Install it once, and Claude Code works like a small development team. A request is planned first. Then each part is written, reviewed and tested by its own helper agent, and you approve every step. Mistakes found in reviews are remembered, so they are not repeated.
+Install it once, and Claude Code works like a small development team. A request is planned first. Then each part is written, tested and reviewed by its own helper agents, and you approve every step. Mistakes found in reviews are remembered, so they are not repeated.
 
 ## Contents
 
@@ -149,6 +149,14 @@ Then add this to `~/.claude/settings.json`:
 
 Add `NODELEGATE` to a command to skip the reminder.
 
+### Global guidelines
+
+`claude/CLAUDE.md` holds general coding guidelines, plus the rule that runs `/learn-from-review` automatically after a full review. Without it, run `/learn-from-review` yourself. To add it to your own global instructions (appends, never overwrites):
+
+```bash
+cat claude/CLAUDE.md >> ~/.claude/CLAUDE.md
+```
+
 ### UI mods
 
 ```bash
@@ -176,7 +184,7 @@ Install commands are in [plugins.md](plugins.md).
 ## Update or remove
 
 - **Update:** `git pull` in the `dev-pipeline-kit` folder, then run the `cp` commands from [Install](#install) again.
-- **Remove:** delete the copied files from `~/.claude/commands/`, `~/.claude/skills/`, `~/.claude/agents/` (and `~/.claude/hooks/`, `~/.claude/mods/` if you installed the extras).
+- **Remove:** delete the copied files from `~/.claude/commands/`, `~/.claude/skills/`, `~/.claude/agents/` (and `~/.claude/hooks/`, `~/.claude/mods/` if you installed the extras). If you appended the guidelines, remove that part from `~/.claude/CLAUDE.md`.
 
 ## More documentation
 

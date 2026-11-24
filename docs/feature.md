@@ -65,7 +65,7 @@ Same loop, as the orchestrator sees it: every agent reports back to the orchestr
                 ┌──────────────────────── orchestrator (main thread) ────────────────────────┐
                 │   reads status.md · routes work · forwards findings verbatim · gates ⏸     │
                 └──┬───────────┬──────────────┬──────────────┬──────────────┬────────────────┘
-                   │ part      │ part+files   │ test list    │ run          │ part+files
+                   │ part      │ part+files   │ test list    │ rerun        │ part+diff  
                    ▼           ▼              ▼              ▼              ▼
              ┌───────────┐ ┌────────────┐ ┌──────────────┐ ┌───────────┐ ┌─────────────┐
              │code-agent │ │test-planner│ │test-implement│ │test-runner│ │ code-review │
@@ -92,7 +92,7 @@ Same loop, as the orchestrator sees it: every agent reports back to the orchestr
 ├── status.md            # orchestrator's board: every step, its status, who is on it
 ├── plan.md              # only when the plan came from an issue
 └── agents/
-    ├── code-agent.md    # one file per agent, written only by that agent
+    ├── code-agent.md    # one file per agent (written by the agent or, if it may not write, by the orchestrator)
     ├── test-planner.md
     └── ...
 ```

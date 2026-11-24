@@ -68,7 +68,7 @@ Whoever writes a lesson counts first. If the new rule would pass a cap, it is no
 
 ## Path 1: the dev pipeline (`/dev-pipeline`, `/feature`)
 
-The pipeline runs plan → implement → review per part. Lessons are read at every step and written automatically by the reviewer.
+The pipeline runs plan → implement → test → review per part. Lessons are read at every step and written automatically by the reviewer.
 
 ```mermaid
 sequenceDiagram

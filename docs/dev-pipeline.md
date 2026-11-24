@@ -1,6 +1,6 @@
 # `/dev-pipeline`: the main workflow
 
-`/dev-pipeline` is the everyday way to build a change: it **plans, implements, reviews and tests part by part**, with you approving the plan and each next part. Use it for anything from a bug fix to a multi-part feature. (`/feature`, see [feature.md](feature.md), is the heavier variant for executing a plan someone already wrote, with a status board on disk.)
+`/dev-pipeline` is the everyday way to build a change: it **plans, then implements, tests and reviews part by part**, with you approving the plan and each next part. Use it for anything from a bug fix to a multi-part feature. (`/feature`, see [feature.md](feature.md), is the heavier variant for executing a plan someone already wrote, with a status board on disk.)
 
 Source: `claude/commands/dev-pipeline.md`.
 
