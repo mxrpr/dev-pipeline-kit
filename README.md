@@ -1,4 +1,4 @@
-# tollas-agent-kit
+# dev-pipeline-kit
 
 Ready-made commands, skills and helper agents for **Claude Code**.
 
@@ -25,8 +25,8 @@ Install it once, and Claude Code works like a small development team. A request 
 Copy and paste this into a terminal:
 
 ```bash
-git clone https://github.com/mxrpr/tollas-agent-kit
-cd tollas-agent-kit
+git clone https://github.com/mxrpr/dev-pipeline-kit
+cd dev-pipeline-kit
 mkdir -p ~/.claude/commands ~/.claude/skills ~/.claude/agents
 cp claude/commands/*.md ~/.claude/commands/
 cp -r claude/skills/* ~/.claude/skills/
@@ -158,7 +158,7 @@ Install commands are in [plugins.md](plugins.md).
 
 ## Update or remove
 
-- **Update:** `git pull` in the `tollas-agent-kit` folder, then run the `cp` commands from [Install](#install) again.
+- **Update:** `git pull` in the `dev-pipeline-kit` folder, then run the `cp` commands from [Install](#install) again.
 - **Remove:** delete the copied files from `~/.claude/commands/`, `~/.claude/skills/`, `~/.claude/agents/` (and `~/.claude/hooks/`, `~/.claude/mods/` if you installed the extras).
 
 ## More documentation
