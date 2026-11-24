@@ -43,15 +43,18 @@ Open Claude Code in your project folder and type one of these.
 
 **Build or fix something** (use this most of the time):
 
+Give it a short description, or a plan you already wrote:
+
 ```
 /dev-pipeline Fix the sync so a deleted user's rows are skipped instead of failing the batch
+/dev-pipeline docs/plans/login-rework.md
 ```
 
 What happens:
 
-1. Claude writes a plan in `plan.md`, split into small parts, and **stops**.
+1. Claude turns the description or plan into a checklist of small parts in `plan.md`, and **stops**.
 2. You read the plan, answer any open questions, and say **go**.
-3. Each part is written, reviewed and tested by a separate agent. Claude asks before starting the next part.
+3. Each part is written by one agent and reviewed by another, then tested. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part.
 4. If something keeps failing, Claude stops and tells you instead of guessing.
 
 If the session is interrupted, run the same command again: it continues from `plan.md`.
@@ -65,12 +68,26 @@ If the session is interrupted, run the same command again: it continues from `pl
 
 This also creates a separate branch and folder (a worktree) for the work, and asks you before every commit, push or pull request.
 
-**Which one should I use?**
+### Which one should I use?
 
-| If you… | Use |
-|---|---|
-| have an idea, a bug or a rough description | `/dev-pipeline` |
-| already have a written, agreed plan | `/feature` |
+Both break the work into parts and hand each part to helper agents. The difference is what they start from and how far they go.
+
+- **Use `/dev-pipeline`** when you know *what* you want but not exactly *how* to split it, and you will handle git yourself.
+- **Use `/feature`** when someone has already written the plan or issue, and you want it carried out from start to pull request.
+
+| | `/dev-pipeline` | `/feature` |
+|---|---|---|
+| **Best for** | everyday work, from a bug fix to a multi-part feature | carrying out a plan that is already agreed |
+| **Input** | a short description or a plan file | a plan file or a GitHub issue number |
+| **Planning** | the `planning` agent splits the input into parts in `plan.md` and lists open decisions | never plans: the plan is used as written; if it is unclear, Claude stops and asks |
+| **Order per part** | write → review → test | write → test → review |
+| **Branch and worktree** | not handled; works in your current checkout | creates its own branch and worktree first |
+| **Commit, push, pull request** | not handled | each one done only after you approve it separately |
+| **Progress tracking** | checkboxes in `plan.md` | a status board in `.claude/feature/status.md`, plus one log file per agent |
+| **When it stops** | after up to 2 more fix rounds on a part, it stops and reports | after 3 failed fix rounds, the part is marked blocked and you decide |
+| **Speed** | lighter: small parts test themselves, documentation-only parts skip review and tests | heavier: every part gets the full test-planning, test-writing and test-running steps |
+
+Both pick up where they stopped if the session is interrupted: `/dev-pipeline` from `plan.md`, `/feature` from `.claude/feature/status.md`.
 
 ## What's inside
 
@@ -84,8 +101,8 @@ You don't need to call most of these yourself: the two commands above use them.
 | `code-agent` | writes the code for one part | Opus |
 | `code-review` | checks the code and says PASS or FAIL | Opus |
 | `test-planner` | decides which tests are needed | Opus |
-| `test-implementer`, `test-writer` | write the tests | Haiku |
-| `test-executor`, `test-runner` | run the tests and report results | Haiku |
+| `test-implementer` | writes the tests and runs them | Haiku |
+| `test-runner` | runs existing tests and reports results | Haiku |
 | `git-runner` | runs git commands (asks before risky ones like push) | Haiku |
 | `os-agent` | runs shell commands (asks before risky ones like delete) | Haiku |
 

@@ -27,12 +27,12 @@ flowchart TD
         REV -->|"FAIL: findings to the SAME code-agent<br/>(up to 2 more rounds)"| IMP
         REV -->|PASS| SMALL{"Small part<br/>(1-3 files, tests in plan)?"}
         SMALL -->|yes| INL["code-agent already wrote<br/>and ran the tests in step a"]
-        SMALL -->|no| TP["c · test-planner (Opus)"] --> TW["test-writer (Haiku)"] --> TE["test-executor (Haiku)"]
-        TE -->|"red: back to the SAME code-agent,<br/>then re-review (d)"| IMP
+        SMALL -->|no| TP["c · test-planner (Opus)"] --> TI["test-implementer (Haiku)<br/>writes + runs the tests"]
+        TI -->|"red: back to the SAME code-agent,<br/>then re-review (d)"| IMP
     end
 
     INL --> DONE["mark '- [x]' in plan.md"]
-    TE -->|green| DONE
+    TI -->|green| DONE
     EDIT --> NEXT
     DONE --> NEXT{{"⏸ continue with the next part?"}}
     NEXT -->|"more parts"| FAST
@@ -43,7 +43,7 @@ flowchart TD
 ## Rules that make it cheap and reliable
 - **Plan first, code on your go.** The planning agent writes `plan.md` as a checklist (`- [ ] Part N: … — files`) with a `Decisions:` list per part and an `## Open decisions` section. No implementation starts until you say so.
 - **`plan.md` is the truth.** Its checkboxes say where work stopped, so a session reset or restart resumes from the plan, not from agent memory.
-- **One agent per role per track, resumed.** Each role (implementation, review, test-planner, test-writer, test-executor) is spawned once and later parts resume it with `SendMessage`, so it keeps the plan and conventions in context. Every ~5 parts the agent writes a condensed summary and a fresh agent continues from it, which caps context growth.
+- **One agent per role per track, resumed.** Each role (implementation, review, test-planner, test-implementer) is spawned once and later parts resume it with `SendMessage`, so it keeps the plan and conventions in context. Every ~5 parts the agent writes a condensed summary and a fresh agent continues from it, which caps context growth.
 - **Reviews stay independent.** A resumed reviewer must re-check the current diff each pass, not repeat its earlier verdict.
 - **Parallel tracks.** Parts that don't depend on each other run as separate tracks, each with its own agents, launched in parallel.
 - **Facts gathered once.** Codebase investigation happens once and is handed to the planner, not repeated by a research agent and the planner side by side.
@@ -59,8 +59,7 @@ flowchart TD
 | Implement (and small-part tests) | `code-agent` | Opus |
 | Review | `code-review` | Opus |
 | Test plan | `test-planner` | Opus |
-| Test code | `test-writer` | Haiku |
-| Test run | `test-executor` | Haiku |
+| Test code and run | `test-implementer` | Haiku |
 | Git / shell | `git-runner`, `os-agent` | Haiku |
 
 ## Quality and learning

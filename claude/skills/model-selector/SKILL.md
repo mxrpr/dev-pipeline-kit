@@ -24,7 +24,7 @@ for judgment. Wrong in either direction costs: too weak → bad output and rewor
 - **Cannot:** switch the model of the current conversation. `/model` is a user command;
   never claim to have switched it.
 - Agents with a fixed model in their frontmatter (`git-runner`, `os-agent`, `test-runner`,
-  `test-implementer`, `test-writer`, `test-executor` → Haiku; `planning`, `code-agent`,
+  `test-implementer` → Haiku; `planning`, `code-agent`,
   `code-review`, `test-planner` → Opus) already choose for themselves. Prefer those agents
   for their job instead of overriding. Override a fixed-model agent only to escalate
   (e.g. pass `model: "fable"` to `code-agent` after an Opus attempt failed) — never to
