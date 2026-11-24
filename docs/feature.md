@@ -5,8 +5,8 @@ Source: `claude/skills/feature/SKILL.md`. For everyday work, prefer [`/dev-pipel
 `/feature` takes a plan someone already wrote (a Markdown file or a GitHub issue) and executes it part by part. The main thread acts only as **orchestrator**: it routes work, tracks state and talks to you. It never plans, writes production code, or runs git/shell/test commands itself; every task goes to a dedicated subagent.
 
 ```
-/feature docs/plans/login-rework.md
-/feature 142
+/devkit:feature docs/plans/login-rework.md
+/devkit:feature 142
 ```
 
 ## Ground rules

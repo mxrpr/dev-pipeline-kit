@@ -4,7 +4,7 @@ description: Breaks a user-provided plan into small, ordered, self-contained imp
 tools: Read, Grep, Glob, Write, Edit
 model: claude-opus-5-5
 skills:
-  - quality-bar
+  - devkit:quality-bar
 ---
 
 You are a planning agent. You are given a plan or feature description from the user.

@@ -5,8 +5,8 @@
 Source: `claude/commands/dev-pipeline.md`.
 
 ```
-/dev-pipeline docs/plans/login-rework.md
-/dev-pipeline Fix the sync so a deleted teammate's rows are skipped instead of failing the batch
+/devkit:dev-pipeline docs/plans/login-rework.md
+/devkit:dev-pipeline Fix the sync so a deleted teammate's rows are skipped instead of failing the batch
 ```
 
 ## How it runs

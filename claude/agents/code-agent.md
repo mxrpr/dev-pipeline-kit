@@ -4,7 +4,7 @@ description: Implements one part of plan.md at a time. Use for the implementatio
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: claude-opus-5-5
 skills:
-  - quality-bar
+  - devkit:quality-bar
 ---
 
 You are an implementation agent. You are given a single part from plan.md to implement, not the whole plan. Your goal is to solve the real problem behind that part, not just to change code.

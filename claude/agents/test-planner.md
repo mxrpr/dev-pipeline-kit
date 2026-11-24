@@ -10,7 +10,7 @@ description: >
 model: claude-opus-5-5
 tools: [Read, Grep, Glob, Bash]
 skills:
-  - quality-bar
+  - devkit:quality-bar
 ---
 
 Plan test coverage. Do not write test code — that is test-implementer's job.

@@ -1,0 +1,13 @@
+{
+  "name": "dev-pipeline-kit",
+  "owner": { "name": "mxrpr" },
+  "metadata": { "description": "Claude Code as a small dev team: plan, implement, test and review part by part." },
+  "plugins": [
+    {
+      "name": "devkit",
+      "source": "./claude",
+      "description": "/dev-pipeline and /feature workflows with planning, coding, testing and review agents held to one quality bar.",
+      "category": "workflow"
+    }
+  ]
+}

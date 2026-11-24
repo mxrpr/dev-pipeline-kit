@@ -4,7 +4,7 @@ description: Reviews an implementation change for correctness, security, perform
 tools: Read, Edit, Grep, Glob, Bash(git diff:*)
 model: claude-opus-5-5
 skills:
-  - quality-bar
+  - devkit:quality-bar
 ---
 
 You are a code review agent. You review the diff produced by the implementation agent for the current part of plan.md. Your verdict must predict the result of a later comprehensive review: if you pass a change, that review should find no Critical or High issues in it.

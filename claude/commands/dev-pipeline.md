@@ -6,6 +6,8 @@ model: claude-opus-5-5
 
 User-provided plan: $ARGUMENTS
 
+Agent names in this file are the `devkit` plugin's agents: always pass them with the plugin prefix as `subagent_type`, e.g. `devkit:code-agent`, `devkit:code-review`, `devkit:test-planner`, `devkit:test-implementer`, `devkit:test-runner`, `devkit:git-runner`, `devkit:os-agent`, `devkit:planning`. A bare name may resolve to a different, user-defined agent.
+
 0a. Routing rule: this pipeline orchestrates subagents, but it does not replace the global command-routing rule. Never run git commands (status/diff/log/add/commit) or shell/build/test commands (cargo/npm/make/…) directly in the orchestrator — delegate to `git-runner` and `os-agent`/`test-runner` respectively, same as outside the pipeline. The only exception is commands a pipeline stage (`code-agent`, `test-implementer`, `test-runner`) already runs as part of its own defined job.
 
 0b. Investigation-dedup rule: if ground-truth facts about the codebase are needed before planning (current state, what's already done, what's dead vs live), gather them ONCE — either inline via Grep/Read or one investigation-agent pass — and feed the findings directly into the planning agent's prompt. Do not run a separate research agent and the planning agent in parallel/independently on the same question; that duplicates the grep work and wastes tokens re-deriving the same facts twice.

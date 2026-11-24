@@ -162,7 +162,7 @@ flowchart LR
 | `~/.claude/agents/planning.md` | `claude/agents/planning.md` | reads lessons, writes decisions into `plan.md` |
 | `~/.claude/agents/code-agent.md` | `claude/agents/code-agent.md` | reads lessons |
 | `~/.claude/agents/code-review.md` | `claude/agents/code-review.md` | reads lessons, writes new ones |
-| `~/.claude/CLAUDE.md` | `claude/CLAUDE.md` | "Review lessons": run `learn-from-review` after a full review |
+| `~/.claude/CLAUDE.md` | `extras/CLAUDE.md` | "Review lessons": run `learn-from-review` after a full review |
 | `<worktree>/.full-review/lessons-recorded` | not in repo | per-review marker of processed dates |
 
 ## Limits

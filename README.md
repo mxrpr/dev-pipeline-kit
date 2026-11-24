@@ -17,25 +17,25 @@ Install it once, and Claude Code works like a small development team. A request 
 ## What you need
 
 - [Claude Code](https://docs.claude.com/en/docs/claude-code), installed and signed in
-- `git`
-- Linux or macOS (on Windows, use WSL)
+- `git` in the projects you work on
+- For the optional extras only: `bash` and `jq` (Linux, macOS, or WSL on Windows)
 
 ## Install
 
-Copy and paste this into a terminal:
+Type these two commands inside Claude Code:
 
-```bash
-git clone https://github.com/mxrpr/dev-pipeline-kit
-cd dev-pipeline-kit
-mkdir -p ~/.claude/commands ~/.claude/skills ~/.claude/agents
-cp claude/commands/*.md ~/.claude/commands/
-cp -r claude/skills/* ~/.claude/skills/
-cp claude/agents/*.md ~/.claude/agents/
+```
+/plugin marketplace add mxrpr/dev-pipeline-kit
+/plugin install devkit@dev-pipeline-kit
 ```
 
-Then restart Claude Code. That's it: the kit now works in all your projects.
+Then run `/reload-plugins` (or restart Claude Code). The kit now works in all your projects. It installs as the plugin **devkit**, so its commands are `/devkit:dev-pipeline` and `/devkit:feature`, and its agents are named `devkit:code-agent`, `devkit:code-review` and so on. It never touches your own files in `~/.claude/`.
 
-> **Note:** this overwrites any files with the same names in `~/.claude/`. If you have your own commands or agents named like the ones here, back them up first.
+To install it for one project only (shared with your team through `.claude/settings.json`), run in a terminal inside the project:
+
+```bash
+claude plugin install devkit@dev-pipeline-kit --scope project
+```
 
 ## How to use it
 
@@ -46,8 +46,8 @@ Open Claude Code in your project folder and type one of these.
 Give it a short description, or a plan you already wrote:
 
 ```
-/dev-pipeline Fix the sync so a deleted user's rows are skipped instead of failing the batch
-/dev-pipeline docs/plans/login-rework.md
+/devkit:dev-pipeline Fix the sync so a deleted user's rows are skipped instead of failing the batch
+/devkit:dev-pipeline docs/plans/login-rework.md
 ```
 
 What happens:
@@ -62,8 +62,8 @@ If the session is interrupted, run the same command again: it skips planning and
 **Carry out a plan that already exists** (a Markdown file or a GitHub issue number):
 
 ```
-/feature docs/plans/login-rework.md
-/feature 142
+/devkit:feature docs/plans/login-rework.md
+/devkit:feature 142
 ```
 
 This also creates a separate branch and folder (a worktree) for the work, and asks you before every commit, push or pull request.
@@ -126,13 +126,20 @@ Every review can add a short, general lesson (for example "a failed lookup never
 
 ## Optional extras
 
+The extras are not part of the plugin. They live in `extras/` of this repository, so clone it first:
+
+```bash
+git clone https://github.com/mxrpr/dev-pipeline-kit
+cd dev-pipeline-kit
+```
+
 ### Delegation hook
 
 Reminds Claude to hand git, test and shell commands to the cheap helper agents instead of running them itself. Needs `jq`.
 
 ```bash
 mkdir -p ~/.claude/hooks
-cp claude/hooks/delegate-guard.sh ~/.claude/hooks/ && chmod +x ~/.claude/hooks/delegate-guard.sh
+cp extras/hooks/delegate-guard.sh ~/.claude/hooks/ && chmod +x ~/.claude/hooks/delegate-guard.sh
 ```
 
 Then add this to `~/.claude/settings.json`:
@@ -150,17 +157,17 @@ Add `NODELEGATE` to a command to skip the reminder.
 
 ### Global guidelines
 
-`claude/CLAUDE.md` holds general coding guidelines, plus the rule that runs `/learn-from-review` automatically after a full review. Without it, run `/learn-from-review` yourself. To add it to your own global instructions (appends, never overwrites):
+`extras/CLAUDE.md` holds general coding guidelines, plus the rule that runs `/learn-from-review` automatically after a full review. Without it, run `/learn-from-review` yourself. To add it to your own global instructions (appends, never overwrites):
 
 ```bash
-cat claude/CLAUDE.md >> ~/.claude/CLAUDE.md
+cat extras/CLAUDE.md >> ~/.claude/CLAUDE.md
 ```
 
 ### UI mods
 
 ```bash
 mkdir -p ~/.claude/mods
-cp -r claude/mods/dev-pipeline-mode claude/mods/colorsage ~/.claude/mods/
+cp -r extras/mods/dev-pipeline-mode extras/mods/colorsage ~/.claude/mods/
 ```
 
 Restart Claude Code. Then:
@@ -182,8 +189,8 @@ Install commands are in [plugins.md](plugins.md).
 
 ## Update or remove
 
-- **Update:** `git pull` in the `dev-pipeline-kit` folder, then run the `cp` commands from [Install](#install) again.
-- **Remove:** delete the copied files from `~/.claude/commands/`, `~/.claude/skills/`, `~/.claude/agents/` (and `~/.claude/hooks/`, `~/.claude/mods/` if you installed the extras). If you appended the guidelines, remove that part from `~/.claude/CLAUDE.md`.
+- **Update:** `/plugin marketplace update dev-pipeline-kit`, then `/plugin update devkit@dev-pipeline-kit`. Or turn on auto-update for the marketplace in `/plugin` → Marketplaces.
+- **Remove:** `/plugin uninstall devkit@dev-pipeline-kit`. Remove the extras by hand if you installed them: `~/.claude/hooks/delegate-guard.sh` and its `settings.json` entry, the mods in `~/.claude/mods/`, and the guidelines you appended to `~/.claude/CLAUDE.md`.
 
 ## More documentation
 
@@ -193,5 +200,3 @@ Install commands are in [plugins.md](plugins.md).
 | [docs/feature.md](docs/feature.md) | `/feature` phases, fix rounds and the files it keeps |
 | [docs/learning-loop.md](docs/learning-loop.md) | how review findings become lessons |
 | [plugins.md](plugins.md) | install commands for the other plugins |
-
-**For a single project only:** copy the files into `<project>/.claude/commands/`, `<project>/.claude/skills/` and `<project>/.claude/agents/` instead of `~/.claude/`. Keep `quality-bar` in `~/.claude/skills/` in any case, because the lessons are stored there.

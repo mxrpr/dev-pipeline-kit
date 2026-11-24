@@ -1,0 +1,10 @@
+{
+  "name": "devkit",
+  "version": "1.0.0",
+  "description": "/dev-pipeline and /feature workflows with planning, coding, testing and review agents held to one quality bar.",
+  "author": { "name": "mxrpr" },
+  "license": "MIT",
+  "homepage": "https://github.com/mxrpr/dev-pipeline-kit",
+  "repository": "https://github.com/mxrpr/dev-pipeline-kit",
+  "keywords": ["workflow", "agents", "code-review", "testing"]
+}

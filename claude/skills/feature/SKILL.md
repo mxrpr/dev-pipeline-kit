@@ -2,7 +2,7 @@
 name: feature
 description: >
   Orchestrate a feature end to end from an existing plan by driving subagents: intake, setup,
-  load plan, implement, test, review, wrap-up. Manual only: run as /feature <plan file | issue number>.
+  load plan, implement, test, review, wrap-up. Manual only: run as /devkit:feature <plan file | issue number>.
 disable-model-invocation: true
 argument-hint: "<plan md file | issue number>"
 ---
@@ -32,15 +32,17 @@ yourself; agents do.
 
 ## Available agents to run
 
+Agent names in this file are the `devkit` plugin's agents: always pass them with the plugin prefix as `subagent_type`, e.g. `devkit:code-agent`, `devkit:code-review`, `devkit:test-planner`, `devkit:test-implementer`, `devkit:test-runner`, `devkit:git-runner`, `devkit:os-agent`, `devkit:planning`. A bare name may resolve to a different, user-defined agent.
+
 | Work            | Agent name         |
 |-----------------|--------------------|
-| Git / worktree  | git-runner         |
-| Shell           | os-agent           |
-| Implementation  | code-agent         |
-| Review          | code-review        |
-| Test planning   | test-planner       |
-| Test writing and first run | test-implementer |
-| Test reruns, full suite    | test-runner      |
+| Git / worktree  | devkit:git-runner         |
+| Shell           | devkit:os-agent           |
+| Implementation  | devkit:code-agent         |
+| Review          | devkit:code-review        |
+| Test planning   | devkit:test-planner       |
+| Test writing and first run | devkit:test-implementer |
+| Test reruns, full suite    | devkit:test-runner      |
 
 ## Workflow
 
