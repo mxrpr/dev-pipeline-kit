@@ -192,6 +192,10 @@ Install commands are in [plugins.md](plugins.md).
 - **Update:** `/plugin marketplace update dev-pipeline-kit`, then `/plugin update devkit@dev-pipeline-kit`. Or turn on auto-update for the marketplace in `/plugin` → Marketplaces.
 - **Remove:** `/plugin uninstall devkit@dev-pipeline-kit`. Remove the extras by hand if you installed them: `~/.claude/hooks/delegate-guard.sh` and its `settings.json` entry, the mods in `~/.claude/mods/`, and the guidelines you appended to `~/.claude/CLAUDE.md`.
 
+## License
+
+MIT, see [LICENSE](LICENSE).
+
 ## More documentation
 
 | Document | Covers |
