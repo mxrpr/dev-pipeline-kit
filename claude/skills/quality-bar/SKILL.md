@@ -91,6 +91,8 @@ Patterns that past comprehensive reviews flagged High or Medium, often more than
 
 This section holds the most important lessons.
 
+The live lesson store is `~/.claude/skills/quality-bar/`. Lessons are added there, never in a plugin's bundled copy of this skill. If this text reached you from a plugin copy, the section 8 printed here may be out of date: read section 8 of `~/.claude/skills/quality-bar/SKILL.md` and use that one, and read the catalog files from that directory.
+
 ### Catalog and caps
 The complete catalog, all severities, is split by stack in this skill's directory (`~/.claude/skills/quality-bar/`):
 - `review-lessons-general.md`: language-agnostic; read for every change.
@@ -108,44 +110,52 @@ Hard caps, enforced by whoever writes a lesson:
 A new lesson that would exceed a cap is not appended. Instead, merge it into the closest existing rule, or generalize two or more existing rules into one, so the count stays at or below the cap. Never drop a High rule to make room; merge Low rules first. When any count passes 90% of its cap, run the `lessons-compact` skill. A new stack file (e.g. `review-lessons-python.md`) may be created when a lesson fits no existing file; add it to the list above.
 
 ### External calls, retries and partial failure
-- [ ] Every upstream error is classified as transient (retry), permanent for one item (skip and count), or fatal (authentication, exhausted rate limit: abort the run). A per-item skip never swallows a fatal error.
-- [ ] Any skip, truncation, page cap or failed sub-fetch is reported as partial or incomplete, never as a clean success. One failed sub-list does not discard its siblings.
-- [ ] A dropped connection or timeout while reading a body is transient; only a real decode error counts as a bad payload.
-- [ ] Optional or cosmetic enrichment calls get no rate-limit retries and stop for the rest of the run after the first rate limit.
-- [ ] A retry or restart gets its own request/page budget, so the retry alone can still finish a maximal valid run.
-- [ ] When a deadline cancels in-flight work that was already paid for (rate limiter, quota), keep or cache what already arrived.
-- [ ] Fallback and live-read paths get a short timeout and no default retries; every HTTP, SMTP and DB call has a timeout.
-- [ ] 4xx is not "permanent" as a class: 408/409/423/425/429, connection reset and body-read timeout are transient.
+- [ ] Every upstream error is classified as transient (retry), permanent for one item (skip and count), or fatal (authentication, exhausted rate limit: abort the run); a per-item skip never swallows a fatal error. 4xx is not "permanent" as a class: 408/409/423/425/429, connection reset and a dropped connection or timeout while reading a body are transient; only a real decode error counts as a bad payload.
+- [ ] Any skip, truncation, page cap or failed sub-fetch is reported as partial or incomplete, never as a clean success. One failed sub-list does not discard its siblings; a CLI or handler catch-all never turns a failure into exit code 0 or a success response.
+- [ ] A retry or restart gets its own request/page budget, so the retry alone can still finish a maximal valid run. When a deadline cancels in-flight work already paid for (rate limiter, quota), keep or cache what already arrived. Turning a fail-fast per-item call into a retrying one: compute worst-case wall time (items x retries x max wait, up to the abort threshold) against the job deadline, and stop later items run-wide after the first exhausted rate limit; also count every rate-limit wait (calls that recover too) against one run-level wait budget, measured from the attempt start (not the phase start).
+- [ ] Fallback, live-read and optional enrichment calls get a short timeout and no default retries (enrichment stops for the rest of the run after the first rate limit); every HTTP, SMTP and DB call has a timeout.
 - [ ] A failed lookup never overwrites or blanks a previously stored value; keep the old value or surface the failure.
-- [ ] Field types and shapes of an external API come from its docs or a recorded response, never a guess; when they disagree, accept both shapes.
-- [ ] When an upstream payload loses fields, list every field the consumers read and restore all of them, not only the visible symptom.
+- [ ] Field types and shapes of an external API come from its docs or a recorded response, never a guess; when they disagree, accept both shapes. When an upstream payload loses fields, list every field the consumers read and restore all of them, not only the visible symptom.
+- [ ] A rotating credential (OAuth refresh token) is never written back from a copy captured earlier in the request: a later write keeps the value the row holds at write time, and a replay is limited to the case that has no stored value yet. A rotated credential whose persist failed is still cached or retried, never dropped (the old one is already revoked).
+- [ ] A long incremental sync advances its watermark to the last fully collected point, so an early stop resumes there instead of refetching the whole window; a permanent per-item skip is recorded as a known gap, not an incomplete state that repeats every run.
 - [ ] When a direct lookup is replaced by a search endpoint, pin the search's implicit filters (active-only, visibility, limits) explicitly.
-- [ ] An input allowlist in front of an external system matches what that system accepts (or a safe superset), never a narrower guess.
+- [ ] An input allowlist or pre-flight check in front of an external system matches what that system accepts (or a safe superset), and resolves its target exactly as the later runtime call will: same endpoint precedence including deployment-wide fallbacks, and the exact value that gets stored, not a trimmed copy.
+
+### Untrusted input and local services
+- [ ] Values from an untrusted URL, link or file never reach a shell string, generated script or file name unescaped: pass argv lists (no `sh -c`, no string-built `do shell script`), build temp file names from a random id only, and validate host/user fields against a strict character set (no control chars, `/`, `..`, leading `-`). Files generated in key=value formats allow-list the keys input may set and reject CR/LF; content derived from untrusted input is never signed or marked trusted.
+- [ ] A localhost-only HTTP server is still reachable from any web page (DNS rebinding, CSRF): enforce a Host allowlist, an Origin check and a per-session random token on every state-changing route.
 
 ### Bounds and performance
 - [ ] Every list call pages to the end or has an explicit, logged cap; every page loop has a max-pages and repeated-token guard.
 - [ ] User-controlled ranges (days, items) have a maximum; expensive queries have a statement timeout; expensive routes have a concurrency limit.
 - [ ] Never sort, window or DISTINCT rows that carry a large payload column (JSON blobs): sort narrow keys, then join the payload.
+- [ ] A speedup that depends on an index or plan shape is pinned by an EXPLAIN plan test (index used, no Sort under the probes) covering every probe the speedup relies on; where small test data hides a plan flip (a constant vs. per-row bound), assert the Index Cond text. Pinning the index definition or the SQL text alone is not enough.
 - [ ] Batch writes are one set-based statement (e.g. `UNNEST`), not a per-row loop inside a transaction.
+- [ ] A per-group "newest first, stop at first match" probe (`LATERAL ... ORDER BY ... LIMIT 1` with an anti-join filter) is bounded by the point past which the answer no longer changes the result, and benchmarked on data where no row matches.
 - [ ] In-process caches and limiters assume a single replica; state it, or keep the state shared.
+- [ ] Reusing a command endpoint (validate, test connection) for a background or page-load read strips its side effects and expensive sub-steps (probes, test generations); the whole chain, sub-calls included, fits inside the proxy timeout.
+- [ ] A child-process runner reads redirected stdout and stderr concurrently before waiting for exit, and every wait has a timeout that kills the child.
 
 ### Correctness and data integrity
-- [ ] Stored timestamps come from the item's own event data, never from sync or observation time.
-- [ ] Dedup keys use stable identity, never a type derived from the item's current status (output must not depend on when the sync saw it).
+- [ ] Stored timestamps come from the item's own event data, never from sync or observation time, and dedup keys use stable identity, never a type derived from the item's current status (output must not depend on when the sync saw it).
 - [ ] Retry and backoff clocks advance only on real attempts; failed, skipped or swallowed ticks neither reset nor age them.
-- [ ] Date and number arithmetic on user input uses checked operations; no user-reachable panic or overflow.
-- [ ] Every path that changes a given state (create, enable, re-enable, link, role change) triggers the same side effects (sync, reset, cache invalidation). Grep every writer of that state.
-- [ ] A guard or lock added to one writer goes on every writer of the same data, written once in a shared helper, and each writer is tested.
+- [ ] Date and number arithmetic on user input and upstream data uses checked operations, including library operator overloads (`date + duration`) that panic on overflow inside the library; no user-reachable panic or overflow.
+- [ ] Every path that changes a given state (create, enable, re-enable, link, role change) triggers the same side effects (sync, reset, cache invalidation), and a guard or lock added to one writer goes on every writer of the same data, written once in a shared helper; grep every writer and test each. A new variant of an existing writer (a second upsert) keeps every side effect and the transaction of the original, also those the target branch added after the fork.
+- [ ] A cache in front of a check that refuses a user action only short-circuits the permissive answer; a refusal is reconfirmed against a fresh read, and a fresh read shown to the user refreshes the cache.
 - [ ] Rows from several tables are locked in one global order; same-table rows are locked `ORDER BY id`.
 - [ ] Before a delete, check what cascades; never silently erase records that other features treat as history.
-- [ ] Comments next to changed code still match it (e.g. a "no lock needed" comment after adding a lock).
+- [ ] Comments next to changed code still match it (e.g. a "no lock needed" comment after adding a lock); documented rules and known limits in agent notes and plans match the code's real conditions and measured steady-state cost.
 - [ ] Untrusted text (titles, descriptions) placed into LLM prompts goes through the project's sanitizer.
-- [ ] Scoping and authorization filters (tenant, project allowlist) go through one chokepoint, not repeated per query.
+- [ ] Scoping and authorization filters (tenant, project allowlist) go through one chokepoint, not repeated per query. A stricter rule for a sensitive data class (fail closed, per-person data) covers every route that can return that data, including aggregates a caller-chosen filter can narrow to one person.
+- [ ] Request handlers never redirect process-global state (console writer, cwd, env vars); pass an injected writer or context instead.
+- [ ] An installer or upgrade migrates user-copied config and templates (schema-versioned), so a fix to a shipped default reaches existing installs.
+- [ ] When a sync skips work it believes is already stored, the proof of "stored" comes only from the range the skip decides on, never from rows the always-refetched part writes on every run; otherwise a missed or interrupted backfill looks complete and is never repaired.
 
 ### Frontend
 - [ ] Use `||`, not `??`, when an empty string also means "missing".
 - [ ] After a mutation, invalidate every query that displays the changed data.
 - [ ] Conflict (409) and validation errors are shown to the user in the form or dialog that caused them.
+- [ ] A query turned off by `enabled` still returns its cached data: gate the consumed data on the same condition, or key the query on the value the gate compares.
 
 ### Single source of truth
 - [ ] No hand-kept list that mirrors an enum or registry; derive it from the enum or registry.
@@ -153,18 +163,22 @@ A new lesson that would exceed a cap is not appended. Instead, merge it into the
 - [ ] A payload one component writes and another reads (plugin to plugin, backend to frontend) has a contract test.
 
 ### Tests
-- [ ] Wiring: a new helper is exercised through the real entry point (job, fetch function, route), so removing the call turns a test red. A helper tested only in isolation does not count.
+- [ ] Wiring: a new helper is exercised through the real entry point (job, fetch function, route), so removing the call turns a test red. A helper tested only in isolation does not count. Same for a new request field: assert it through the HTTP route, not only on the function it feeds.
 - [ ] Every role-restricted route has a test that each lower role is refused (status and body), including the role just below the gate, paired with the allowed role succeeding.
-- [ ] Every timeout, deadline, early-exit, give-up and failure branch has a test that reaches it, with data where the exit is not also the natural end of the input.
+- [ ] Every timeout, deadline, early-exit, give-up and failure branch has a test that reaches it, with data where the exit is not also the natural end of the input; a stop flag meant to outlive an inner loop is tested across two outer iterations (two teammates, two pages).
 - [ ] Each guard is proven red on its own; one red test through one guard proves nothing about the others.
 - [ ] Mocks do not encode the change's own assumption about an external API; mock shapes come from docs or recorded responses, and frontend mocks use the error shape the backend really sends.
 - [ ] DB-backed tests fail loudly or report themselves as skipped when no database is present; they never pass silently or fall back to a dev database URL.
 - [ ] When tuples become parallel arrays, the test data varies every paired column, so a misaligned or cross-joined result fails.
 - [ ] Never write a test that pins known-bad behavior as intended.
+- [ ] Platform-gated branches (OS checks) sit behind an injectable platform service, so security-critical paths for every OS are tested on any CI runner.
 
 ### Logging
-- [ ] Logs carry tenant and entity ids, not usernames, emails, connection strings or secrets.
+- [ ] Logs carry tenant and entity ids, not usernames, emails, connection strings or secrets; command lines and URLs that carry session tokens are redacted before logging.
 
 ### Branch readiness
-- [ ] Lint and build against the target branch's current rules (rebase-check), not the merge-base's.
+- [ ] Lint, build and test against the target branch's current rules and contracts (rebase-check), not the merge-base's: a contract added on the target (a coverage guard, a required manifest field) must also be met by the new code.
+- [ ] Before commit, check untracked files for build or type-check output written next to source (e.g. `tsc -b` emitting `.js` beside a `.ts` config): a tool may load it instead of the source. Fix the emit target; a gitignore entry alone does not stop the shadowing.
 - [ ] Re-check migration numbers for collisions with the target branch. A migration squash does not rely on `CREATE TABLE IF NOT EXISTS` to upgrade partially migrated databases. Indexes on large tables are built without a long table lock. Code does not require a migration the deploy may not have run.
+- [ ] CI gates really run: triggers match the default branch, the toolchain is pinned and installed before the build, the job fails on zero tests; tools downloaded in CI are version-pinned and hash-checked before they get signing secrets, and signing jobs need an approval.
+- [ ] Before the first release of anything handling credentials: a disclosure contact, a security model (untrusted inputs, what is put in trust stores, where secrets land on disk and in logs), a rollback plan and a way to revoke a bad signed release.

@@ -110,7 +110,8 @@ After the last part, go to phase 7.
 - First have `git-runner` capture the change in the worktree: `git -C <worktree> diff` and
   `git -C <worktree> status --short`. `code-review` runs from the main checkout and may only run
   `git diff`, so it cannot see the worktree on its own.
-- Send `code-review` the part text, the implementation summary, the worktree root, that diff, the latest test report (command, pass/fail counts),
+- Then have `os-agent` run the repo's build and lint commands in the worktree and report command and result. A failure goes to `code-agent` as a fix round, before any review.
+- Send `code-review` the part text, that build/lint report, the implementation summary, the worktree root, that diff, the latest test report (command, pass/fail counts),
   and the **explicit list of changed and new files** (untracked files are not in the diff; it
   reads them in full). It reviews code and tests against the `quality-bar` skill.
 - It must return a verdict (`PASS` / `FAIL`) and numbered findings:
@@ -122,7 +123,7 @@ After the last part, go to phase 7.
 - Forward findings and failures **verbatim, with their ids**. Do not paraphrase or merge them.
 - The fixer answers per id: `fixed` (what changed) or `disputed` (why). A dispute the
   orchestrator cannot settle from the plan goes to the user (⏸).
-- After a code fix: `test-runner` reruns the tests (phase 5), then resume the **same** reviewer with the ids it
+- After a code fix: `test-runner` reruns the tests (phase 5) and `os-agent` the build and lint, then resume the **same** reviewer with the ids it
   raised; it verifies those ids and reviews every line the fix changed, not the whole part again.
 - Count rounds per part in `status.md` (`round 2/3`). Round 3 still failing: stop, set the step
   `blocked`, and ask the user (⏸).

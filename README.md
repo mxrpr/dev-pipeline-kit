@@ -29,7 +29,7 @@ Type these two commands inside Claude Code:
 /plugin install devkit@dev-pipeline-kit
 ```
 
-Then run `/reload-plugins` (or restart Claude Code). The kit now works in all your projects. It installs as the plugin **devkit**, so its commands are `/devkit:dev-pipeline` and `/devkit:feature`, and its agents are named `devkit:code-agent`, `devkit:code-review` and so on. It never touches your own files in `~/.claude/`.
+Then run `/reload-plugins` (or restart Claude Code). The kit now works in all your projects. It installs as the plugin **devkit**, so its commands are `/devkit:dev-pipeline` and `/devkit:feature`, and its agents are named `devkit:code-agent`, `devkit:code-review` and so on. It leaves your own files in `~/.claude/` alone, with one exception: at session start it copies its `quality-bar` skill to `~/.claude/skills/quality-bar/` if that folder does not exist yet. That folder is the lesson store (see [How it learns](#how-it-learns)); it is yours, and plugin updates never overwrite it.
 
 To install it for one project only (shared with your team through `.claude/settings.json`), run in a terminal inside the project:
 
@@ -101,12 +101,12 @@ You don't need to call most of these yourself: the two commands above use them.
 | `code-agent` | writes the code for one part | Opus |
 | `code-review` | checks the code and says PASS or FAIL | Opus |
 | `test-planner` | decides which tests are needed | Opus |
-| `test-implementer` | writes the tests and runs them | Haiku |
+| `test-implementer` | writes the tests and runs them | Sonnet |
 | `test-runner` | runs existing tests and reports results | Haiku |
 | `git-runner` | runs git commands (asks before risky ones like push) | Haiku |
 | `os-agent` | runs shell commands (asks before risky ones like delete) | Haiku |
 
-Thinking work runs on the strong model (Opus); simple, mechanical work runs on the cheap one (Haiku).
+Thinking work runs on the strong model (Opus), test writing on Sonnet, and simple, mechanical work on the cheap one (Haiku).
 
 ### Skills (rules and routines Claude loads when needed)
 
@@ -122,7 +122,7 @@ Thinking work runs on the strong model (Opus); simple, mechanical work runs on t
 
 ### How it learns
 
-Every review can add a short, general lesson (for example "a failed lookup never blanks a stored value"). Lessons are stored once in `~/.claude/skills/quality-bar/` and read before the next plan, the next code and the next review, in every project. How it works in detail: [docs/learning-loop.md](docs/learning-loop.md).
+Every review can add a short, general lesson (for example "a failed lookup never blanks a stored value"). Lessons are stored once in `~/.claude/skills/quality-bar/` and read before the next plan, the next code and the next review, in every project. The plugin seeds that folder from its own copy on first use (a `SessionStart` hook that needs a POSIX shell); after that only your reviews change it. How it works in detail: [docs/learning-loop.md](docs/learning-loop.md).
 
 ## Optional extras
 

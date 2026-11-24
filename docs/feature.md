@@ -27,7 +27,7 @@ Source: `claude/skills/feature/SKILL.md`. For everyday work, prefer [`/dev-pipel
 | Implementation | `code-agent` | Opus |
 | Review | `code-review` | Opus |
 | Test planning | `test-planner` | Opus |
-| Test writing and first run | `test-implementer` | Haiku |
+| Test writing and first run | `test-implementer` | Sonnet |
 | Test reruns, full suite | `test-runner` | Haiku |
 
 ## Phases
@@ -69,7 +69,7 @@ Same loop, as the orchestrator sees it: every agent reports back to the orchestr
                    ▼           ▼              ▼              ▼              ▼
              ┌───────────┐ ┌────────────┐ ┌──────────────┐ ┌───────────┐ ┌─────────────┐
              │code-agent │ │test-planner│ │test-implement│ │test-runner│ │ code-review │
-             │  (Opus)   │ │  (Opus)    │ │   (Haiku)    │ │  (Haiku)  │ │   (Opus)    │
+             │  (Opus)   │ │  (Opus)    │ │   (Sonnet)   │ │  (Haiku)  │ │   (Opus)    │
              └─────┬─────┘ └─────┬──────┘ └──────┬───────┘ └─────┬─────┘ └──────┬──────┘
                    │ files,      │ test names    │ test files    │ pass/fail     │ PASS/FAIL +
                    │ risks       │ + intent      │               │ + errors      │ R<n> findings

@@ -4,11 +4,12 @@ description: >
   Implements and runs tests from a given test plan (or directly, for small/
   mechanical additions). Writes test code following the plan's file/name/
   intent list, then runs the test command for the touched package
-  and reports pass/fail. Always runs on Haiku — cheap model for mechanical
-  test-writing and test execution once a human or test-planner has decided
-  what to cover.
-model: haiku
+  and reports pass/fail. Runs on Sonnet: tests are the gate the review
+  trusts, so they are not written by the cheapest model.
+model: claude-sonnet-5-5
 tools: [Read, Edit, Write, Grep, Glob, Bash]
+skills:
+  - devkit:quality-bar
 ---
 
 Implement tests from the supplied plan. If no plan was given, ask for one
@@ -17,6 +18,8 @@ for anything non-trivial).
 
 ## Workflow
 
+0. The `quality-bar` skill is preloaded. Its section 5 and the "Tests"
+   lessons in section 8 are the standard your tests must meet.
 1. Read the target source file(s) and any existing sibling test file for
    style/conventions (assertion style, fixture helpers, naming).
 2. Write each planned test. Match existing patterns exactly — don't

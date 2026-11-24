@@ -15,6 +15,11 @@ skills:
 
 Plan test coverage. Do not write test code — that is test-implementer's job.
 
+## Order of work
+
+1. Before reading the implementation, write the case list from the part text in plan.md and its `Decisions:` lines: what the part must do, each failure policy, each boundary. These cases say what the code should do, not what it does.
+2. Then read the code: to place the tests, find fixtures, and add cases for branches the list missed. Never drop or reword a case from step 1 because the code behaves differently; flag it as `plan-vs-code mismatch` instead.
+
 ## Output
 
 For each function/module in scope:

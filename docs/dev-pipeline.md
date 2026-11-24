@@ -25,7 +25,7 @@ flowchart TD
         direction TB
         IMP["a · code-agent (Opus)<br/>implements the part,<br/>lists changed + new files"] --> SMALL{"Small part<br/>(1-3 files, tests in plan)?"}
         SMALL -->|yes| INL["code-agent already wrote<br/>and ran the tests in step a"]
-        SMALL -->|no| TP["b · test-planner (Opus)"] --> TI["test-implementer (Haiku)<br/>writes + runs the tests"]
+        SMALL -->|no| TP["b · test-planner (Opus)"] --> TI["test-implementer (Sonnet)<br/>writes + runs the tests"]
         TI -->|"red: fix by code-agent or<br/>test-implementer, test-runner reruns"| IMP
         INL --> REV
         TI -->|green| REV["c · code-review (Opus)<br/>gets the changed + new file list<br/>vs quality-bar + lessons, records lessons"]
@@ -62,12 +62,14 @@ flowchart TD
 | Implement (and small-part tests) | `code-agent` | Opus |
 | Review | `code-review` | Opus |
 | Test plan | `test-planner` | Opus |
-| Test code and run | `test-implementer` | Haiku |
+| Test code and run | `test-implementer` | Sonnet |
 | Test reruns after a fix | `test-runner` | Haiku |
 | Git / shell | `git-runner`, `os-agent` | Haiku |
 
 ## Quality and learning
-`planning`, `code-agent` and `code-review` all preload the `quality-bar` skill, including its lessons from past reviews. `code-review` records new lessons itself (the orchestrator only relays its "Lessons recorded" list). If you run `/comprehensive-review:full-review` on the result, scope it to the plan's files and then run `/learn-from-review`. See [learning-loop.md](learning-loop.md).
+Before each review, `os-agent` runs the build and lint, so the reviewer judges tooling from a real run, not from `code-agent`'s summary; it also reads the code before that summary. `test-planner` writes its cases from the plan part first and reads the code second. The planner's `Lessons:` line per part names the catalog sections `code-agent` reads.
+
+`planning`, `code-agent`, `test-implementer` and `code-review` all preload the `quality-bar` skill, including its lessons from past reviews. `code-review` records new lessons itself (the orchestrator only relays its "Lessons recorded" list). If you run `/comprehensive-review:full-review` on the result, scope it to the plan's files and then run `/learn-from-review`. See [learning-loop.md](learning-loop.md).
 
 ## `/dev-pipeline` vs `/feature`
 

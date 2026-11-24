@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -e \"$HOME/.claude/skills/quality-bar\" ] || { mkdir -p \"$HOME/.claude/skills\" && cp -r \"${CLAUDE_PLUGIN_ROOT}/skills/quality-bar\" \"$HOME/.claude/skills/quality-bar\"; }"
+          }
+        ]
+      }
+    ]
+  }
+}

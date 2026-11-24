@@ -26,5 +26,7 @@ Your job:
 6. Write the plan to plan.md as a checklist, one line per part, in the format:
    - [ ] Part N: <short description> — <files/areas likely touched>
      - Decisions: <one line per decision from step 5, stated as the chosen rule>
+     - Lessons: <the catalog sections that apply to this part, e.g. `general 2, 4, 10; sql 1`>
+   The `Lessons:` line tells the implementation agent which catalog sections to read instead of the whole catalog, so name every section the part can touch; when unsure, include it. Always include the tests section of each file you name.
    Then add a final section `## Open decisions` listing every decision you could not settle from the request or the code, each with your recommended option. Do not guess these silently.
 7. Do not implement anything. Do not write code. Return a short summary of the parts you defined, plus the open decisions the user must answer.
