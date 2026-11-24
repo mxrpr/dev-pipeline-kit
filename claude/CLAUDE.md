@@ -2,6 +2,8 @@
 
 ## Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
 
+Adapted from [andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills).
+
 Tradeoff: These guidelines bias toward caution over speed. For trivial tasks, use judgment.
 
 1. Think Before Coding
@@ -56,7 +58,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Subagents
 
-Before spawning any subagent, apply the model-selector skill.
+Name the kit agent (`subagent_type`) for each task; use a general-purpose agent, with an explicit model, only when none fits.
 
 ## Review lessons
 

@@ -11,7 +11,7 @@ Source: `claude/skills/feature/SKILL.md`. For everyday work, prefer [`/dev-pipel
 
 ## Ground rules
 - **Never plan.** The plan is input. If it is missing, unclear or wrong, the orchestrator stops and asks.
-- **Delegate, do not do.** Each role has one agent; tasks outside the roster go through `model-selector`.
+- **Delegate, do not do.** Each role has one agent; a task outside the roster goes to a general-purpose agent with an explicit model.
 - **Repo rules win.** The repo's `CLAUDE.md` (worktree naming, lint, tests) overrides the skill and is passed to every agent.
 - **One agent per role, resumed.** Each agent is spawned once, its id is saved in `status.md`, and later steps resume it with `SendMessage`, so it keeps its context.
 - **State lives in files.** Everything is on disk, so a session reset resumes where it stopped.
@@ -36,7 +36,7 @@ Source: `claude/skills/feature/SKILL.md`. For everyday work, prefer [`/dev-pipel
 flowchart TD
     IN(["/feature plan.md or issue number"]) --> P1
     P1["1 · Intake<br/>fetch issue, one codebase investigation,<br/>scope + open questions"] --> G1{{⏸ confirm scope}}
-    G1 --> P2["2 · Setup<br/>branch + worktree (git-runner)<br/>create .claude/feature/status.md,<br/>keep it out of commits"]
+    G1 --> P2["2 · Setup<br/>branch + worktree in .worktrees/ (git-runner)<br/>create .claude/feature/status.md,<br/>keep it out of commits"]
     P2 --> P3["3 · Load plan<br/>copy plan parts into status.md as steps"]
     P3 --> G2{{⏸ confirm this is the plan}}
     G2 --> LOOP
@@ -44,7 +44,7 @@ flowchart TD
     subgraph LOOP [" per plan part "]
         direction TB
         P4["4 · Implement<br/>code-agent"] --> P5a["5 · Test plan<br/>test-planner"]
-        P5a --> P5b["test-implementer<br/>writes + runs tests<br/>(touched package only)"]
+        P5a --> P5b["test-implementer<br/>writes + runs tests (touched package),<br/>red check on must-fail tests"]
         P5b -->|green| P6["6 · Review<br/>git-runner captures the worktree diff,<br/>code-review vs quality-bar"]
         P5b -->|red: code bug| P4
         P5b -->|red: test bug| P5b

@@ -21,12 +21,12 @@ test or production code — if a test fails, report it, don't fix it.
    package must be tested from its own directory, use a subshell
    `(cd <abs-dir> && <cmd>)`; never assume a workspace-wide command covers it.
 2. **Never touch credentials or `.env` files.** Do not read, modify, or
-   reference any `.env`/`local.env` file unless the caller explicitly says a
+   reference any `.env*` file unless the caller explicitly says a
    suite requires live credentials.
 3. **Report only, never fix.** On failure, report the test name, the
    assertion/error, and the file:line. Do not attempt a fix — that needs
    the caller's judgment, not yours.
-4. **Keep the summary short.** One line per crate/package: pass count,
+4. **Keep the summary short.** One line per package: pass count,
    fail count, fail names if any. Full raw output only on request or for
    a failure that needs surfacing in detail. Default cap: under 300 words
    total unless told otherwise.

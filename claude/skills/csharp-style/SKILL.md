@@ -8,7 +8,7 @@ description: >
 
 # C# coding style
 
-Apply these rules to every C# file you write or edit. They override terser defaults.
+Apply these rules to every C# file you write or edit. They override terser defaults, but the repository's own conventions (its CLAUDE.md, `.editorconfig`, the surrounding code) win.
 
 ---
 

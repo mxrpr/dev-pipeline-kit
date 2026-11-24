@@ -9,7 +9,7 @@
 #
 # Detection is harness-provided and model-proof:
 #   * main thread   -> payload has NO agent_id / agent_type  -> guard applies
-#   * any subagent  -> payload HAS agent_id / agent_type      -> always allow
+#   * any subagent  -> payload HAS agent_id / agent_type      -> no opinion (normal permissions apply)
 #   (verified empirically against real PreToolUse payloads, CC 2.1.202)
 #
 # Escape hatch: put the marker  NODELEGATE  anywhere in the command to skip the
@@ -21,11 +21,12 @@
 # Wiring (~/.claude/settings.json):
 #   "PreToolUse": [ { "matcher": "Bash",
 #     "hooks": [ { "type": "command",
-#                  "command": "/home/mixer/.claude/hooks/delegate-guard.sh" } ] } ]
+#                  "command": "~/.claude/hooks/delegate-guard.sh" } ] } ]
 
 IN=$(cat)
 
-allow() { printf '{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"allow"}}'; exit 0; }
+# No output = no opinion: the user's normal permission rules decide. Never auto-approve.
+pass() { exit 0; }
 ask()   { # $1 = reason shown in the permission prompt
   jq -nc --arg r "$1" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"ask",permissionDecisionReason:$r}}'
   exit 0
@@ -33,13 +34,13 @@ ask()   { # $1 = reason shown in the permission prompt
 
 # --- inside a subagent? this IS the cheap worker -> never interfere ---
 AGENT=$(printf '%s' "$IN" | jq -r '(.agent_id // .agent_type) // ""')
-[ -n "$AGENT" ] && allow
+[ -n "$AGENT" ] && pass
 
 CMD=$(printf '%s' "$IN" | jq -r '.tool_input.command // ""')
-[ -z "$CMD" ] && allow
+[ -z "$CMD" ] && pass
 
 # --- explicit override ---
-case "$CMD" in *NODELEGATE*) allow ;; esac
+case "$CMD" in *NODELEGATE*) pass ;; esac
 
 # token must sit at a command position: start, or after ; & | ( ` newline or whitespace
 pos='(^|[;&|(`]|[[:space:]])'
@@ -62,5 +63,5 @@ if printf '%s' "$CMD" | grep -Eq "${pos}(${OS})${end}"; then
   ask "OS/shell/HTTP command — delegate to the os-agent (Haiku) to save tokens. For pure file reads/search prefer the Read/Grep/Glob tools. (Destructive ops — rm, mv over existing, kill, chmod -R, POST/PUT/DELETE, sudo — still need your explicit ok in the delegation prompt.) Approve only if an inline one-off is genuinely faster; or append  # NODELEGATE  to skip this prompt."
 fi
 
-# --- harmless builtins (echo, cd, pwd, export, test, true, ...) pass ---
-allow
+# --- everything else: no opinion ---
+pass

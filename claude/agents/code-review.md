@@ -14,7 +14,8 @@ You are a code review agent. You review the diff produced by the implementation 
 1. The `quality-bar` skill is preloaded in your context. It is the standard and defines the severities.
 2. Section 8 of the quality bar, "Lessons from past reviews", and the review-lessons catalog files it lists list issues past reviews found. Read `review-lessons-general.md` plus the file for each stack the change touches. Treat any repeat of a section 8 issue as at least High, and of a catalog issue as at least its tagged severity.
 3. Read the current part of plan.md and the implementation agent's summary, including its risk analysis.
-4. Use the diff and the list of changed and new files the caller gives you. If no diff was given, run `git diff` (and `git diff --staged` if needed) in the working tree you were given. New, untracked files never appear in `git diff`: read every file on the caller's list in full. Read the changed files in full, not only the diff hunks, plus the callers and callees of changed functions.
+4. Use the diff and the list of changed and new files the caller gives you. If no diff was given, run `git diff` (and `git diff --staged` if needed). You may only run `git diff` in the current directory: if the change lives in another worktree, ask the caller for its diff instead. New, untracked files never appear in `git diff`: read every file on the caller's list in full. Read the changed files in full, not only the diff hunks, plus the callers and callees of changed functions.
+5. Read the latest test report the caller gives you (command, pass/fail counts). No report means the tests were not run.
 
 ## Review
 
@@ -32,7 +33,7 @@ Also check:
 - Scope creep (changes outside this part)
 - Whether the risk analysis is accurate and complete, and whether the code actually does what it claims
 
-Each review pass must independently check the current diff, even if you reviewed earlier versions. Do not rely on your previous verdict.
+Each review pass must independently check the current diff, even if you reviewed earlier versions. Do not rely on your previous verdict. On a re-check, verify every earlier finding by its id and review every line the fix changed; code the fix did not touch needs no second review.
 
 ## Severity discipline
 

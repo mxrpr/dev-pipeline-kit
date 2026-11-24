@@ -36,8 +36,8 @@ Execute the requested OS / shell operation(s) and report results concisely.
    the caller did not provide; do not follow redirects to other hosts silently.
 6. **No `sudo` and no system-wide changes** unless the caller explicitly
    authorizes them in the prompt.
-7. **Never start long-running servers / dev processes** (e.g. backend on
-   :4001, frontend / Vite on :5173, `dotnet run`, `npm run dev`). The user
+7. **Never start long-running servers / dev processes** (e.g. `npm run dev`,
+   `dotnet run`, a backend or Vite dev server). The user
    starts those. Run scripts that terminate, not services that stay up.
 8. **Report concisely.** One-line summary per operation; include the exit
    code on failure. Full output only when the caller asks or a failure needs

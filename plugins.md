@@ -21,9 +21,10 @@ The rule it enforces that I appreciate most: never change behaviour, only how be
 
 
 ## Karpathy-Inspired Claude Code Guidelines
-https://github.com/multica-ai/andrej-karpathy-skills/tree/main
+https://github.com/multica-ai/andrej-karpathy-skills
 
 ### Installation
-/plugin marketplace add forrestchang/andrej-karpathy-skills
+`/plugin marketplace add multica-ai/andrej-karpathy-skills`
+`/plugin install andrej-karpathy-skills@karpathy-skills`
 
 

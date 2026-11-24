@@ -54,10 +54,10 @@ What happens:
 
 1. Claude turns the description or plan into a checklist of small parts in `plan.md`, and **stops**.
 2. You read the plan, answer any open questions, and say **go**.
-3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part.
+3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part, and runs the full test suite at the end.
 4. If something keeps failing, Claude stops and tells you instead of guessing.
 
-If the session is interrupted, run the same command again: it continues from `plan.md`.
+If the session is interrupted, run the same command again: it skips planning and continues at the first unchecked part of `plan.md`.
 
 **Carry out a plan that already exists** (a Markdown file or a GitHub issue number):
 
@@ -114,9 +114,8 @@ Thinking work runs on the strong model (Opus); simple, mechanical work runs on t
 |---|---|
 | `quality-bar` | the standard all code must meet, plus the lessons learned from past reviews |
 | `feature` | the `/feature` command |
-| `model-selector` | picks the right agent and model for a task |
 | `commit-clean` | writes clean commit messages |
-| `create-worktree` | creates worktrees inside the project, under `worktrees/` |
+| `create-worktree` | creates worktrees inside the project, under `.worktrees/` |
 | `csharp-style` | C# style rules |
 | `learn-from-review` | turns a finished full code review into lessons (`/learn-from-review`) |
 | `lessons-compact` | merges and trims the stored lessons (`/lessons-compact`), about once a month |
