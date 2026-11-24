@@ -39,17 +39,17 @@ yourself; agents do.
 | Implementation  | code-agent         |
 | Review          | code-review        |
 | Test planning   | test-planner       |
-| Test writing    | test-implementer   |
-| Test running    | test-runner        |
+| Test writing and first run | test-implementer |
+| Test reruns, full suite    | test-runner      |
 
 ## Workflow
 
 Run phases 1–3 once. Then run this loop for each part of the approved plan, in order:
 
 ```
-orchestrator --> implementation --> test planning --> test implementation --> test run --> code review --> test review --> notify user
-    ^                                                                             |              |              |
-    |_____________________________________________________________________________|______________|______________|
+orchestrator --> implementation --> test planning --> test implementation + run --> code review --> notify user
+    ^                                                                  |                 |
+    |__________________________________________________________________|_________________|
 ```
 
 Every agent reports back to the orchestrator, which routes fixes and moves to the next part.
@@ -59,18 +59,16 @@ After the last part, go to phase 7.
 
 
 ### 1. Intake
-- If the input is an issue number, fetch the issue (title, body, comments).
+- If the input is an issue number, have `os-agent` fetch the issue (title, body, comments), e.g. with `gh issue view <n> --comments`.
 - Gather the codebase facts the implementation needs in one investigation pass. Do not repeat it later.
 - Output: short problem statement, scope, open questions.
 - ⏸ Confirm scope and answer open questions with the user.
 
-<!-- TODO: details -->
-
 ### 2. Setup
 - Create branch and worktree per the repo's naming rules (git-runner).
 - Create `.claude/feature/status.md` (all steps `not ready`) and the `agents/` directory.
-
-<!-- TODO: details -->
+- Keep those files out of commits: unless the repo already ignores `.claude/feature/`, have
+  `git-runner` add it to the repo's `.git/info/exclude` (shared by all worktrees, never committed).
 
 ### 3. Load plan
 - Input is a file: read the plan from it. Input is an issue number: the plan is the issue
@@ -79,8 +77,6 @@ After the last part, go to phase 7.
   number) there. For an issue, save the plan to `<worktree>/.claude/feature/plan.md` and use that path.
 - Pass that absolute path to every agent; agents reading a relative `plan.md` must be told it.
 - ⏸ Confirm with the user that this is the plan to execute.
-
-<!-- TODO: details -->
 
 ### 4. Implement (per part)
 - Set the step to `ongoing`, agent `code-agent`, in `status.md`.
@@ -93,23 +89,26 @@ After the last part, go to phase 7.
 ### 5. Test (per part)
 - `test-planner` gets the part text and the changed/new file list; returns test names with a
   one-line intent each. Skip it only for a part with no behavior change (docs, config).
-- `test-implementer` writes those tests; returns the test files it touched.
-- `test-runner` runs only the tests for the touched crate/package (full suite waits for
-  phase 7); returns pass/fail and, per failure, the test name and the first error lines.
+- `test-implementer` writes those tests and runs only the tests for the touched crate/package
+  (full suite waits for phase 7); returns the test files it touched, pass/fail and, per
+  failure, the test name and the first error lines. Do not run `test-runner` on top of it.
 - Triage each failure before routing it:
   - the test asserts what the plan intends and the code disagrees → **code bug** →
     `code-agent`;
   - the test does not compile, sets up wrongly, or asserts something the plan does not say →
     **test bug** → `test-implementer`;
   - unclear → send it to `code-agent` with the question; it answers which side is wrong.
-- After each fix, `test-runner` reruns. Green → phase 6.
+- After each fix, `test-runner` reruns the touched package's tests. Green → phase 6.
 
 ### 6. Review (per part)
-- Send `code-review` the part text, the implementation summary, and the **explicit list of
-  changed and new files** (its `git diff` does not show untracked files). It reviews code and
-  tests against the `quality-bar` skill.
+- First have `git-runner` capture the change in the worktree: `git -C <worktree> diff` and
+  `git -C <worktree> status --short`. `code-review` runs from the main checkout and may only run
+  `git diff`, so it cannot see the worktree on its own.
+- Send `code-review` the part text, the implementation summary, the worktree root, that diff,
+  and the **explicit list of changed and new files** (untracked files are not in the diff; it
+  reads them in full). It reviews code and tests against the `quality-bar` skill.
 - It must return a verdict (`PASS` / `FAIL`) and numbered findings:
-  `R<n> <Critical|High|Medium|Low> <file:line> <problem> → <fix>`.
+  `R<n> <Critical|High|Medium|Low> <file:line> — <problem> — <failure scenario> → <fix>`.
 - Gate: Critical and High must be fixed. Medium is fixed unless the orchestrator records in
   `status.md` why not. Low is logged in `status.md` and not sent back.
 - Route each finding: code → `code-agent`, tests → `test-implementer`.
@@ -118,7 +117,7 @@ After the last part, go to phase 7.
 - Forward findings and failures **verbatim, with their ids**. Do not paraphrase or merge them.
 - The fixer answers per id: `fixed` (what changed) or `disputed` (why). A dispute the
   orchestrator cannot settle from the plan goes to the user (⏸).
-- After a code fix: rerun tests (phase 5), then resume the **same** reviewer with the ids it
+- After a code fix: `test-runner` reruns the tests (phase 5), then resume the **same** reviewer with the ids it
   raised; it checks those ids and the new diff only, not the whole part again.
 - Count rounds per part in `status.md` (`round 2/3`). Round 3 still failing: stop, set the step
   `blocked`, and ask the user (⏸).
@@ -127,11 +126,9 @@ After the last part, go to phase 7.
   part, go to phase 7.
 
 ### 7. Wrap-up
-- Run the repo's full lint and test gates.
+- Run the repo's full test suite (`test-runner`) and its lint gates (`os-agent`), in the worktree.
 - Summarize what changed and what was tested.
-- ⏸ Ask before commit, push and PR, as separate approvals.
-
-<!-- TODO: details -->
+- ⏸ Ask before commit, push and PR, as separate approvals; `git-runner` carries out each one.
 
 ## State
 
@@ -180,9 +177,10 @@ Status: not ready | ongoing | blocked | done
 
 ### Agent status files (`agents/<agent>.md`, one per agent)
 
-Tell every agent, in each prompt, the absolute path of its own status file and to keep it
-current: write it when it starts a task, at each meaningful step, and when it finishes.
-An agent writes only its own file; it never touches `status.md` or another agent's file.
+Agents that write files as part of their job (`code-agent`, `test-implementer`) keep their own
+status file: tell them, in each prompt, its absolute path and to keep it current (write it when
+it starts a task, at each meaningful step, and when it finishes). An agent writes only its own
+file; it never touches `status.md` or another agent's file.
 
 ```markdown
 # <agent name>
@@ -197,13 +195,14 @@ Updated: <timestamp>
 - <timestamp> <what was done / result>
 ```
 
-An agent with no file-writing tool (e.g. `code-review`) cannot keep its own file: the
-orchestrator writes it from that agent's report, marked `(written by orchestrator)`.
+Agents whose rules forbid writing files (`test-planner`, `test-runner`, `code-review`,
+`git-runner`, `os-agent`) are not asked to: the orchestrator writes their file from the
+agent's report, marked `(written by orchestrator)`.
 
 On restart, read `status.md` first, then the agent files for the ongoing step, and resume
 from there.
 
-<!-- TODO: decide if .claude/feature/ is committed or gitignored. -->
+`.claude/feature/` is never committed (see Setup).
 
 ## Final report
 

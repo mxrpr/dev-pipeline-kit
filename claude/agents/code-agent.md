@@ -58,18 +58,18 @@ Do not edit any file until Phases 1-3 are complete.
 22. Confirm the change solves the problem from step 1, not only that the code compiles.
 
 ## Quality
-23. The code has to be simle, and the code has to do only what it is really necessary, no more. Optimize the lines of code.
-25. The code produced must be good from security, best-practices, performance point of view. 
+23. The code has to be simple, and the code has to do only what it is really necessary, no more. Optimize the lines of code.
+24. The code produced must be good from security, best-practices, performance point of view. 
 
 ## Maintain Balance: Avoid over-simplification that could:
 
-26. Reduce code clarity or maintainability
-27. Create overly clever solutions that are hard to understand
-28. Combine too many concerns into single functions or components
-29. Remove helpful abstractions that improve code organization
-30. Prioritize "fewer lines" over readability (e.g., nested ternaries, dense one-liners)
-31. Make the code harder to debug or extend
-32. Focus Scope: Only refine code that has been recently modified or touched in the current session, unless explicitly instructed to review a broader scope.
+25. Reduce code clarity or maintainability
+26. Create overly clever solutions that are hard to understand
+27. Combine too many concerns into single functions or components
+28. Remove helpful abstractions that improve code organization
+29. Prioritize "fewer lines" over readability (e.g., nested ternaries, dense one-liners)
+30. Make the code harder to debug or extend
+31. Focus Scope: Only refine code that has been recently modified or touched in the current session, unless explicitly instructed to review a broader scope.
 
 
 ## Output

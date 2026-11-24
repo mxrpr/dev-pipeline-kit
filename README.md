@@ -54,7 +54,7 @@ What happens:
 
 1. Claude turns the description or plan into a checklist of small parts in `plan.md`, and **stops**.
 2. You read the plan, answer any open questions, and say **go**.
-3. Each part is written by one agent and reviewed by another, then tested. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part.
+3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part.
 4. If something keeps failing, Claude stops and tells you instead of guessing.
 
 If the session is interrupted, run the same command again: it continues from `plan.md`.
@@ -80,11 +80,11 @@ Both break the work into parts and hand each part to helper agents. The differen
 | **Best for** | everyday work, from a bug fix to a multi-part feature | carrying out a plan that is already agreed |
 | **Input** | a short description or a plan file | a plan file or a GitHub issue number |
 | **Planning** | the `planning` agent splits the input into parts in `plan.md` and lists open decisions | never plans: the plan is used as written; if it is unclear, Claude stops and asks |
-| **Order per part** | write → review → test | write → test → review |
+| **Order per part** | write → test → review | write → test → review |
 | **Branch and worktree** | not handled; works in your current checkout | creates its own branch and worktree first |
 | **Commit, push, pull request** | not handled | each one done only after you approve it separately |
 | **Progress tracking** | checkboxes in `plan.md` | a status board in `.claude/feature/status.md`, plus one log file per agent |
-| **When it stops** | after up to 2 more fix rounds on a part, it stops and reports | after 3 failed fix rounds, the part is marked blocked and you decide |
+| **When it stops** | after 2 fix rounds on a part (test and review failures together), it stops and reports | after 3 failed fix rounds, the part is marked blocked and you decide |
 | **Speed** | lighter: small parts test themselves, documentation-only parts skip review and tests | heavier: every part gets the full test-planning, test-writing and test-running steps |
 
 Both pick up where they stopped if the session is interrupted: `/dev-pipeline` from `plan.md`, `/feature` from `.claude/feature/status.md`.

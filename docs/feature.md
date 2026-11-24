@@ -27,8 +27,8 @@ Source: `claude/skills/feature/SKILL.md`. For everyday work, prefer [`/dev-pipel
 | Implementation | `code-agent` | Opus |
 | Review | `code-review` | Opus |
 | Test planning | `test-planner` | Opus |
-| Test writing | `test-implementer` | Haiku |
-| Test running | `test-runner` | Haiku |
+| Test writing and first run | `test-implementer` | Haiku |
+| Test reruns, full suite | `test-runner` | Haiku |
 
 ## Phases
 
@@ -36,7 +36,7 @@ Source: `claude/skills/feature/SKILL.md`. For everyday work, prefer [`/dev-pipel
 flowchart TD
     IN(["/feature plan.md or issue number"]) --> P1
     P1["1 · Intake<br/>fetch issue, one codebase investigation,<br/>scope + open questions"] --> G1{{⏸ confirm scope}}
-    G1 --> P2["2 · Setup<br/>branch + worktree (git-runner)<br/>create .claude/feature/status.md"]
+    G1 --> P2["2 · Setup<br/>branch + worktree (git-runner)<br/>create .claude/feature/status.md,<br/>keep it out of commits"]
     P2 --> P3["3 · Load plan<br/>copy plan parts into status.md as steps"]
     P3 --> G2{{⏸ confirm this is the plan}}
     G2 --> LOOP
@@ -44,11 +44,10 @@ flowchart TD
     subgraph LOOP [" per plan part "]
         direction TB
         P4["4 · Implement<br/>code-agent"] --> P5a["5 · Test plan<br/>test-planner"]
-        P5a --> P5b["test-implementer<br/>writes tests"]
-        P5b --> P5c["test-runner<br/>runs touched package only"]
-        P5c -->|green| P6["6 · Review<br/>code-review vs quality-bar"]
-        P5c -->|red: code bug| P4
-        P5c -->|red: test bug| P5b
+        P5a --> P5b["test-implementer<br/>writes + runs tests<br/>(touched package only)"]
+        P5b -->|green| P6["6 · Review<br/>git-runner captures the worktree diff,<br/>code-review vs quality-bar"]
+        P5b -->|red: code bug| P4
+        P5b -->|red: test bug| P5b
         P6 -->|"FAIL: code finding"| P4
         P6 -->|"FAIL: test finding"| P5b
         P6 -->|PASS| DONE["step done<br/>'Part 2/5 done: …'"]
@@ -81,9 +80,9 @@ Same loop, as the orchestrator sees it: every agent reports back to the orchestr
 
 ## Fix rounds
 - **Test failure triage:** test matches the plan but code disagrees → `code-agent`; test broken or asserts something the plan does not say → `test-implementer`; unclear → `code-agent` decides which side is wrong.
-- **Review findings** come as `R<n> <Critical|High|Medium|Low> <file:line> <problem> → <fix>`. Critical and High must be fixed; Medium is fixed or its skip is justified in `status.md`; Low is only logged.
+- **Review findings** come as `R<n> <Critical|High|Medium|Low> <file:line> — <problem> — <failure scenario> → <fix>`. Critical and High must be fixed; Medium is fixed or its skip is justified in `status.md`; Low is only logged.
 - Findings are forwarded **verbatim with their ids**. The fixer answers per id: `fixed` or `disputed` (disputes the orchestrator can't settle go to you).
-- After a fix: tests rerun, then the **same** reviewer re-checks only its ids and the new diff.
+- After a fix: `test-runner` reruns the tests, then the **same** reviewer re-checks only its ids and the new diff.
 - Rounds are counted per part (`round 2/3`); round 3 still failing → `blocked`, ask the user.
 
 ## State on disk
@@ -99,6 +98,7 @@ Same loop, as the orchestrator sees it: every agent reports back to the orchestr
 ```
 
 - `status.md` — written only by the orchestrator: input, branch/worktree, plan path, current phase, a **Steps** table (`not ready | ongoing | blocked | done`, agent, "doing now"), an **Agents** table (agentId, status file, current step) and decisions/open questions.
-- `agents/<agent>.md` — each agent's own log (`working | done | failed | waiting`, doing now, timestamped log). Agents without a write tool (`code-review`) get theirs written by the orchestrator.
+- `agents/<agent>.md` — each agent's own log (`working | done | failed | waiting`, doing now, timestamped log). `code-agent` and `test-implementer` write their own; for agents whose rules forbid writing files (`test-planner`, `test-runner`, `code-review`, `git-runner`, `os-agent`) the orchestrator writes it from their report.
+- `.claude/feature/` is never committed: Setup adds it to the repo's `.git/info/exclude` unless it is already ignored.
 - On restart the orchestrator reads `status.md`, then the agent files of the ongoing step, and resumes.
 
