@@ -80,7 +80,7 @@ Same loop, as the orchestrator sees it: every agent reports back to the orchestr
 
 ## Fix rounds
 - **Test failure triage:** test matches the plan but code disagrees → `code-agent`; test broken or asserts something the plan does not say → `test-implementer`; unclear → `code-agent` decides which side is wrong.
-- **Review findings** come as `R<n> <Critical|High|Medium|Low> <file:line> — <problem> — <failure scenario> → <fix>`. Critical and High must be fixed; Medium is fixed or its skip is justified in `status.md`; Low is only logged.
+- **Review findings** come as `R<n> <Critical|High|Medium|Low> <file:line> — <problem> — <failure scenario> → <fix>`. Critical, High and Medium must be fixed; Low is only logged.
 - Findings are forwarded **verbatim with their ids**. The fixer answers per id: `fixed` or `disputed` (disputes the orchestrator can't settle go to you).
 - After a fix: `test-runner` reruns the tests, then the **same** reviewer re-checks only its ids and the new diff.
 - Rounds are counted per part (`round 2/3`); round 3 still failing → `blocked`, ask the user.

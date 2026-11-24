@@ -5,6 +5,8 @@ import type { Action, AgentRow, PlanStep } from '../types'
 
 const NAME = 'dev-pipeline-mode'
 const PANE = NAME
+// Width the docked pane asks for; a width dragged by hand still wins.
+const PANE_COLUMNS = 53
 const MODELS = ['opus', 'sonnet', 'haiku', 'fable']
 const VERSIONS: Record<string, string> = { opus: '5.5', sonnet: '5.5', haiku: '4.5', fable: '5.1' }
 const labelOf = (x: string) => `${x} ${VERSIONS[x] ?? ''}`.trim()
@@ -29,6 +31,16 @@ const actions = atom({ plugin: 'dev-pipeline-mode', key: 'actions' } as const, [
 const agents = atom({ plugin: 'dev-pipeline-mode', key: 'agents' } as const, [])
 const now = atom({ plugin: 'dev-pipeline-mode', key: 'now' } as const, 0)
 const plans = atom({ plugin: 'dev-pipeline-mode', key: 'plans' } as const, {})
+const place = atom({ plugin: 'dev-pipeline-mode', key: 'place' } as const, '')
+
+// Folder name and branch; the name shows once when they match (worktree naming rule).
+async function loadPlace($: EngineInterface) {
+  const dir = await $.session.cwd()
+  const { exitCode, stdout } = await $.process.run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], { cwd: dir })
+  const branch = exitCode === 0 ? stdout.trim() : ''
+  const name = base(dir)
+  await update($, place, () => (branch === '' || branch === name ? name : `${name} · ⎇ ${branch}`))
+}
 const MAIN = 'main'
 const MAX_PLAN_STEPS = 12
 
@@ -213,7 +225,7 @@ export const register: Register = on => {
         required: ['steps'],
       },
     })
-    void $.ui.open({ id: PANE, title: 'Dev pipeline mode' })
+    void $.ui.open({ id: PANE, title: 'Dev pipeline mode', columns: PANE_COLUMNS })
     const stored = await $.store.get(SKILL_STORE_KEY)
     if (stored !== null && typeof stored === 'object') {
       await update($, skillCounts, () => stored as Record<string, number>)
@@ -223,6 +235,7 @@ export const register: Register = on => {
       await update($, agentCounts, () => storedAgents as Record<string, number>)
     }
     await loadSkillNames($)
+    await loadPlace($)
     $.clock.every(2000, () => void sync($))
     return next(e)
   })
@@ -233,7 +246,7 @@ export const register: Register = on => {
       await $.ui.close({ id: PANE })
       return { text: 'Dev pipeline mode hidden.' }
     }
-    await $.ui.open({ id: PANE, title: 'Dev pipeline mode' })
+    await $.ui.open({ id: PANE, title: 'Dev pipeline mode', columns: PANE_COLUMNS })
     return { text: 'Dev pipeline mode shown.' }
   })
 
@@ -316,6 +329,7 @@ export const register: Register = on => {
 
   on('turn.complete', async ($, e, next) => {
     if (e.agentId !== undefined) void sync($)
+    else void loadPlace($)
     return next(e)
   })
 
@@ -328,6 +342,7 @@ export const register: Register = on => {
     const usedSkill = await read($, skill)
     const rows: AgentRow[] = await read($, agents)
     const t = await read($, now)
+    const where = await read($, place)
     const skillRanked = topRanked(await read($, skillNames), await read($, skillCounts))
     const agentRanked = topRanked(await read($, agentNames), await read($, agentCounts))
     // Framed horizontal bars: a faint track per row, filled by use against the top one.
@@ -405,6 +420,7 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="column">
+        {where !== '' && <Text dimColor>📁 {cut(where, cols)}</Text>}
         {usedSkill !== '' && <Text color="cyan">Use skill: {usedSkill}</Text>}
         <Box flexDirection="row" gap={1}>
           {MODELS.map(x =>

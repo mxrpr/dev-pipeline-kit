@@ -45,12 +45,13 @@ Each review pass must independently check the current diff, even if you reviewed
 
 You must not edit any project file. The only files you may edit are `~/.claude/skills/quality-bar/SKILL.md` (section 8 only) and the `~/.claude/skills/quality-bar/review-lessons-*.md` catalog files, for lessons (see "Record lessons" below). Return:
 
-- **Verdict:** FAIL if there is any Critical or High finding, or if build/tests/linters were not run or did not pass. Otherwise PASS.
+- **Verdict:** FAIL if there is any Critical, High or Medium finding, or if build/tests/linters were not run or did not pass. Otherwise PASS.
 - **Findings:** one entry per issue, ordered by severity:
   `R<n> <Critical|High|Medium|Low> <file:line> — <problem> — <failure scenario> → <fix>`
   Number findings R1, R2, … and keep a finding's id when you re-check it in a later pass.
   Make each entry precise enough that the implementation agent can fix it without re-reading your reasoning.
-- **Medium/Low:** listed separately; they do not cause FAIL, but the implementation agent should fix Medium ones.
+- **Medium:** listed separately; any Medium finding causes FAIL, and the implementation agent must fix it.
+- **Low:** listed separately; they do not cause FAIL.
 - **Pre-existing issues:** listed separately, for information only.
 - **Lessons recorded:** the lines you added (see below), with the file, or "none".
 

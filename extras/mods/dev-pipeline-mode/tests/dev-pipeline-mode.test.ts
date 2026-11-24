@@ -358,3 +358,29 @@ test('PanePlan rejects a step with an unknown status', async ($, on) => {
   expect(res.isError).toBe(true)
   expect(String(res.result)).toContain('steps[0].status must be one of pending, in_progress, completed')
 })
+
+// The pane names the session's folder, and the branch only when it differs.
+function placeWorld(on: On, branch: string) {
+  skillWorld(on)
+  on('command.list', () => ({ value: [] }) as never)
+  on('agent.list', () => ({ value: [] }) as never)
+  on('session.cwd', () => ({ value: '/home/u/repo/.worktrees/425-llm-lookup' }) as never)
+  on('process.run', () => ({ value: { exitCode: 0, stdout: `${branch}\n`, stderr: '' } }) as never)
+}
+
+test('pane shows the folder once when the branch has the same name', async ($, on) => {
+  placeWorld(on, '425-llm-lookup')
+  await startSession($)
+  const pane = await mountPane($)
+  expect(await pane.find({ type: 'Text', text: '📁 425-llm-lookup' })).toBeDefined()
+  expect(JSON.stringify(await pane.drawn())).not.toContain('⎇')
+})
+
+test('pane shows folder and branch when they differ, above the model list', async ($, on) => {
+  placeWorld(on, 'main')
+  await startSession($)
+  const pane = await mountPane($)
+  expect(await pane.find({ type: 'Text', text: '📁 425-llm-lookup · ⎇ main' })).toBeDefined()
+  const drawn = JSON.stringify(await pane.drawn())
+  expect(drawn.indexOf('425-llm-lookup')).toBeLessThan(drawn.indexOf('model-opus'))
+})

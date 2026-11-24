@@ -43,6 +43,8 @@ declare module 'claude-code' {
       now: number
       // Plan steps per loop: 'main' or a subagent id.
       plans: Record<string, PlanStep[]>
+      // Session folder name and git branch, e.g. 'repo · ⎇ main'; '' until read.
+      place: string
     }
   }
 }

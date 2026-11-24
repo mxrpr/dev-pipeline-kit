@@ -16,7 +16,7 @@ Scope: apply it to the code you added or changed and to the code paths it direct
 - **Medium**: maintainability problems, minor edge cases, inconsistent conventions, missing tests for non-critical paths.
 - **Low**: style, naming, small readability improvements.
 
-Critical and High must be zero before a change is handed off. Medium should be fixed unless there is a stated reason not to.
+Critical, High and Medium must be zero before a change is handed off.
 
 ## 1. Security (OWASP Top 10, CWE)
 

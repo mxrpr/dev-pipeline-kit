@@ -115,8 +115,7 @@ After the last part, go to phase 7.
   reads them in full). It reviews code and tests against the `quality-bar` skill.
 - It must return a verdict (`PASS` / `FAIL`) and numbered findings:
   `R<n> <Critical|High|Medium|Low> <file:line> — <problem> — <failure scenario> → <fix>`.
-- Gate: Critical and High must be fixed. Medium is fixed unless the orchestrator records in
-  `status.md` why not. Low is logged in `status.md` and not sent back.
+- Gate: Critical, High and Medium must be fixed (any of them means `FAIL`). Low is logged in `status.md` and not sent back.
 - Route each finding: code → `code-agent`, tests → `test-implementer`.
 
 ### Fix rounds (phases 5 and 6)
