@@ -25,6 +25,7 @@ Do not start the implementation subagent, always wait for the user to give the c
    b. Resume (or, on the first part, spawn) the review agent to review the change.
       - If it flags problems: send the findings back to the SAME implementation agent (SendMessage, not a new spawn) and repeat, up to 2 more times.
       - If it passes: mark the part done in plan.md and continue.
+      - Lessons: the review agent records new lessons itself in the global `quality-bar` store (section 8 of its `SKILL.md` plus `review-lessons-<stack>.md`) and lists them under "Lessons recorded". Do not write lessons anywhere yourself, and never into the project; just relay that list to the user.
    c. If the part is small (roughly 1-3 files) and the plan already specifies what to test, skip test-planner and test-writer/test-executor as separate spawns — have the implementation agent write and run the tests inline as part of step (a), and only send its result to the review agent. Otherwise: resume (or spawn) the test-planner subagent for a test plan scoped to this part, then resume (or spawn) the test-writer subagent to write tests from it, then resume (or spawn) the test-executor subagent to run them and report pass/fail.
    d. If tests fail: send the failure back to the SAME implementation agent for a fix, then re-run from step (b) for this part.
    e. The plan document contains the truth. Whenever the session is reset, or the client restarts development, the plan's checklist state is how you know where the implementation process has stopped — not agent memory (agents may not survive a session reset, the plan doc must).
@@ -32,5 +33,7 @@ Do not start the implementation subagent, always wait for the user to give the c
    g. After a part is finished, ask the user to continue with the next part.
 
 3. After all parts are done, report a summary of what was implemented and tested.
+
+4. Quality standard: the planning, implementation and review agents all work to the `quality-bar` skill (preloaded via their `skills:` frontmatter), including its lessons from past reviews. When a comprehensive review (e.g. `/comprehensive-review:full-review`) is run on the result, scope it to the files changed by this plan, then run the `learn-from-review` skill on its `.full-review/` folder, so the next implementation avoids what it found.
 
 Stop and report status if any part fails after retries, rather than continuing to the next part.

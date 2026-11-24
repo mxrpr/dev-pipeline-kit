@@ -1,209 +1,126 @@
 # tollas-agent-kit
-Skills, agents, hooks and mods I use with Claude Code, plus a port of the same skills and agents
-for GitHub Copilot.
+
+Ready-made commands, skills and helper agents for **Claude Code**.
+
+Install it once, and Claude Code works like a small development team. A request is planned first. Then each part is written, reviewed and tested by its own helper agent, and you approve every step. Mistakes found in reviews are remembered, so they are not repeated.
+
+## Contents
+
+- [What you need](#what-you-need)
+- [Install](#install)
+- [How to use it](#how-to-use-it)
+- [What's inside](#whats-inside)
+- [Optional extras](#optional-extras)
+- [Update or remove](#update-or-remove)
+- [More documentation](#more-documentation)
+
+## What you need
+
+- [Claude Code](https://docs.claude.com/en/docs/claude-code), installed and signed in
+- `git`
+- Linux or macOS (on Windows, use WSL)
+
+## Install
+
+Copy and paste this into a terminal:
+
+```bash
+git clone https://github.com/mxrpr/tollas-agent-kit
+cd tollas-agent-kit
+mkdir -p ~/.claude/commands ~/.claude/skills ~/.claude/agents
+cp claude/commands/*.md ~/.claude/commands/
+cp -r claude/skills/* ~/.claude/skills/
+cp claude/agents/*.md ~/.claude/agents/
+```
+
+Then restart Claude Code. That's it: the kit now works in all your projects.
+
+> **Note:** this overwrites any files with the same names in `~/.claude/`. If you have your own commands or agents named like the ones here, back them up first.
+
+## How to use it
+
+Open Claude Code in your project folder and type one of these.
+
+**Build or fix something** (use this most of the time):
 
 ```
-claude/     Claude Code: skills, agents, hooks, mods
-copilot/    GitHub Copilot port (custom agents, Agent Skills, prompt files, CLI plugin)
-plugins.md  third-party Claude Code plugins I use
-learning-loop.md  how review findings become lessons for the next change
+/dev-pipeline Fix the sync so a deleted user's rows are skipped instead of failing the batch
 ```
 
-## What's inside
+What happens:
 
-### Skills
-Located in `claude/skills/`. Each skill is a `SKILL.md` that Claude loads when its description matches the task, or when you call it by name (`/<skill>`).
+1. Claude writes a plan in `plan.md`, split into small parts, and **stops**.
+2. You read the plan, answer any open questions, and say **go**.
+3. Each part is written, reviewed and tested by a separate agent. Claude asks before starting the next part.
+4. If something keeps failing, Claude stops and tells you instead of guessing.
 
-| Skill | Trigger | What it does |
-|---|---|---|
-| **feature** | manual only: `/feature <plan.md \| issue #>` | Orchestrates a whole feature from an existing plan by driving subagents (see below). |
-| **model-selector** | before delegating any work | Picks the subagent type first (`git-runner`, `os-agent`, `test-runner`, `code-agent`, `code-review`, …), then the model tier (Haiku → Sonnet → Opus → Fable). Production code is always written and reviewed on Opus. Hints `/model` when the main-thread model is a poor fit. |
-| **quality-bar** | implementing or reviewing code | Shared quality standard (security, correctness, error handling, concurrency, performance, architecture, tests, docs) with Critical/High/Medium/Low severities. `code-agent` builds to it, `code-review` judges against it. Critical and High must be zero before hand-off. Section 8 and the stack-split catalog (`review-lessons-{general,rust,frontend,sql}.md`) hold lessons from past reviews, with hard caps (section 8 ≤60, catalog section ≤30, file ≤150). |
-| **learn-from-review** | after `comprehensive-review:full-review`, or `/learn-from-review` | Turns a finished review's `.full-review/` findings into general lessons in the `quality-bar` store: dedupes, enforces caps, marks processed reviews in `.full-review/lessons-recorded`. |
-| **lessons-compact** | `/lessons-compact [--dry-run]`, when a cap passes 90% or monthly | Compacts the lesson store: merges duplicates, fixes misplaced rules, brings files under cap after user approval, lists rules that could become lint/CI checks. |
-| **commit-clean** | writing a commit message | Git commit messages with no AI attribution (no `Co-Authored-By: Claude`, no "Generated with" lines), Conventional Commits format. |
-| **create-worktree** | "create a worktree", isolated work | Creates git worktrees under `worktrees/` inside the project root, never as sibling directories. |
-| **csharp-style** | writing or editing C# | Explicit types (no `var`), XML doc comments on public/internal members, braces on all `if`/loops, explicit created types (no `new()`). |
+If the session is interrupted, run the same command again: it continues from `plan.md`.
 
-### `/feature` — the feature orchestrator
-
-`/feature` takes a plan someone already wrote (a Markdown file or a GitHub issue) and executes it part by part. The main thread acts only as **orchestrator**: it routes work, tracks state and talks to you. It never plans, writes production code, or runs git/shell/test commands itself; every task goes to a dedicated subagent.
+**Carry out a plan that already exists** (a Markdown file or a GitHub issue number):
 
 ```
 /feature docs/plans/login-rework.md
 /feature 142
 ```
 
-#### Ground rules
-- **Never plan.** The plan is input. If it is missing, unclear or wrong, the orchestrator stops and asks.
-- **Delegate, do not do.** Each role has one agent; tasks outside the roster go through `model-selector`.
-- **Repo rules win.** The repo's `CLAUDE.md` (worktree naming, lint, tests) overrides the skill and is passed to every agent.
-- **One agent per role, resumed.** Each agent is spawned once, its id is saved in `status.md`, and later steps resume it with `SendMessage`, so it keeps its context.
-- **State lives in files.** Everything is on disk, so a session reset resumes where it stopped.
-- **User gates (⏸).** It stops for your confirmation at fixed points and never commits, pushes or opens a PR without a separate approval for each.
-- **Stop on repeated failure.** 3 failed fix rounds on one part: the step goes `blocked` and you decide.
+This also creates a separate branch and folder (a worktree) for the work, and asks you before every commit, push or pull request.
 
-#### Agent roster
+**Which one should I use?**
 
-| Work | Agent | Model |
+| If you… | Use |
+|---|---|
+| have an idea, a bug or a rough description | `/dev-pipeline` |
+| already have a written, agreed plan | `/feature` |
+
+## What's inside
+
+You don't need to call most of these yourself: the two commands above use them.
+
+### Agents (helpers that each do one job)
+
+| Agent | Job | Model |
 |---|---|---|
-| Git / worktree | `git-runner` | Haiku |
-| Shell | `os-agent` | Haiku |
-| Implementation | `code-agent` | Opus |
-| Review | `code-review` | Opus |
-| Test planning | `test-planner` | Opus |
-| Test writing | `test-implementer` | Haiku |
-| Test running | `test-runner` | Haiku |
+| `planning` | splits the request into small parts in `plan.md` | Opus |
+| `code-agent` | writes the code for one part | Opus |
+| `code-review` | checks the code and says PASS or FAIL | Opus |
+| `test-planner` | decides which tests are needed | Opus |
+| `test-implementer`, `test-writer` | write the tests | Haiku |
+| `test-executor`, `test-runner` | run the tests and report results | Haiku |
+| `git-runner` | runs git commands (asks before risky ones like push) | Haiku |
+| `os-agent` | runs shell commands (asks before risky ones like delete) | Haiku |
 
-#### Phases
+Thinking work runs on the strong model (Opus); simple, mechanical work runs on the cheap one (Haiku).
 
-```mermaid
-flowchart TD
-    IN(["/feature plan.md or issue number"]) --> P1
-    P1["1 · Intake<br/>fetch issue, one codebase investigation,<br/>scope + open questions"] --> G1{{⏸ confirm scope}}
-    G1 --> P2["2 · Setup<br/>branch + worktree (git-runner)<br/>create .claude/feature/status.md"]
-    P2 --> P3["3 · Load plan<br/>copy plan parts into status.md as steps"]
-    P3 --> G2{{⏸ confirm this is the plan}}
-    G2 --> LOOP
+### Skills (rules and routines Claude loads when needed)
 
-    subgraph LOOP [" per plan part "]
-        direction TB
-        P4["4 · Implement<br/>code-agent"] --> P5a["5 · Test plan<br/>test-planner"]
-        P5a --> P5b["test-implementer<br/>writes tests"]
-        P5b --> P5c["test-runner<br/>runs touched package only"]
-        P5c -->|green| P6["6 · Review<br/>code-review vs quality-bar"]
-        P5c -->|red: code bug| P4
-        P5c -->|red: test bug| P5b
-        P6 -->|"FAIL: code finding"| P4
-        P6 -->|"FAIL: test finding"| P5b
-        P6 -->|PASS| DONE["step done<br/>'Part 2/5 done: …'"]
-    end
+| Skill | What it does |
+|---|---|
+| `quality-bar` | the standard all code must meet, plus the lessons learned from past reviews |
+| `feature` | the `/feature` command |
+| `model-selector` | picks the right agent and model for a task |
+| `commit-clean` | writes clean commit messages |
+| `create-worktree` | creates worktrees inside the project, under `worktrees/` |
+| `csharp-style` | C# style rules |
+| `learn-from-review` | turns a finished full code review into lessons (`/learn-from-review`) |
+| `lessons-compact` | merges and trims the stored lessons (`/lessons-compact`), about once a month |
 
-    DONE -->|more parts| P4
-    DONE -->|last part| P7["7 · Wrap-up<br/>full lint + test suite, summary"]
-    P7 --> G3{{⏸ commit? ⏸ push? ⏸ PR?<br/>separate approvals}}
-    LOOP -. "round 3 still failing" .-> BL{{⏸ blocked: ask user}}
-```
+### How it learns
 
-Same loop, as the orchestrator sees it: every agent reports back to the orchestrator, which routes the fix or moves on.
+Every review can add a short, general lesson (for example "a failed lookup never blanks a stored value"). Lessons are stored once in `~/.claude/skills/quality-bar/` and read before the next plan, the next code and the next review, in every project. How it works in detail: [docs/learning-loop.md](docs/learning-loop.md).
 
-```
-                ┌──────────────────────── orchestrator (main thread) ────────────────────────┐
-                │   reads status.md · routes work · forwards findings verbatim · gates ⏸     │
-                └──┬───────────┬──────────────┬──────────────┬──────────────┬────────────────┘
-                   │ part      │ part+files   │ test list    │ run          │ part+files
-                   ▼           ▼              ▼              ▼              ▼
-             ┌───────────┐ ┌────────────┐ ┌──────────────┐ ┌───────────┐ ┌─────────────┐
-             │code-agent │ │test-planner│ │test-implement│ │test-runner│ │ code-review │
-             │  (Opus)   │ │  (Opus)    │ │   (Haiku)    │ │  (Haiku)  │ │   (Opus)    │
-             └─────┬─────┘ └─────┬──────┘ └──────┬───────┘ └─────┬─────┘ └──────┬──────┘
-                   │ files,      │ test names    │ test files    │ pass/fail     │ PASS/FAIL +
-                   │ risks       │ + intent      │               │ + errors      │ R<n> findings
-                   └─────────────┴───────────────┴───────────────┴───────────────┘
-                                               ▼
-                                   back to orchestrator → next step
-```
+## Optional extras
 
-#### Fix rounds
-- **Test failure triage:** test matches the plan but code disagrees → `code-agent`; test broken or asserts something the plan does not say → `test-implementer`; unclear → `code-agent` decides which side is wrong.
-- **Review findings** come as `R<n> <Critical|High|Medium|Low> <file:line> <problem> → <fix>`. Critical and High must be fixed; Medium is fixed or its skip is justified in `status.md`; Low is only logged.
-- Findings are forwarded **verbatim with their ids**. The fixer answers per id: `fixed` or `disputed` (disputes the orchestrator can't settle go to you).
-- After a fix: tests rerun, then the **same** reviewer re-checks only its ids and the new diff.
-- Rounds are counted per part (`round 2/3`); round 3 still failing → `blocked`, ask the user.
+### Delegation hook
 
-#### State on disk
+Reminds Claude to hand git, test and shell commands to the cheap helper agents instead of running them itself. Needs `jq`.
 
-```
-<worktree>/.claude/feature/
-├── status.md            # orchestrator's board: every step, its status, who is on it
-├── plan.md              # only when the plan came from an issue
-└── agents/
-    ├── code-agent.md    # one file per agent, written only by that agent
-    ├── test-planner.md
-    └── ...
-```
-
-- `status.md` — written only by the orchestrator: input, branch/worktree, plan path, current phase, a **Steps** table (`not ready | ongoing | blocked | done`, agent, "doing now"), an **Agents** table (agentId, status file, current step) and decisions/open questions.
-- `agents/<agent>.md` — each agent's own log (`working | done | failed | waiting`, doing now, timestamped log). Agents without a write tool (`code-review`) get theirs written by the orchestrator.
-- On restart the orchestrator reads `status.md`, then the agent files of the ongoing step, and resumes.
-
-#### Live pane: `featuremode` mod
-`claude/mods/featuremode/` adds a terminal pane that polls `.claude/feature/status.md` every 2 s and shows the feature name, phase, progress, each step with its status (`✓` done, `•` ongoing, `✗` blocked, `○` not ready) and the agent on it, plus the top skills used (counts from the `tollasmode` mod). The pane opens on its own the first time a board appears; `/featuremode` shows/hides it.
-
-```
-┌ Feature ───────────────────────────┐
-│ login-rework                       │
-│ Phase 5 · 1/4 done · updated 14:02 │
-│ ✓ 1. Token model                   │
-│ • 2. Refresh flow      code-agent  │
-│ ✗ 3. Session store                 │
-│ ○ 4. Logout endpoint               │
-│                                    │
-│ Top skills                         │
-│ feature        ████████████   12   │
-│ quality-bar    ██████          6   │
-└────────────────────────────────────┘
-```
-
-### Learning loop
-Review findings become short, general lessons stored globally in the `quality-bar` skill (section 8 plus `review-lessons-{general,rust,frontend,sql}.md`), which `planning`, `code-agent` and `code-review` read before every change. `code-review` records lessons itself; `/learn-from-review` records them after `comprehensive-review:full-review`; `/lessons-compact` keeps the store under its caps. Diagrams and the full file list: [learning-loop.md](learning-loop.md).
-
-### Agents
-Located in `claude/agents/` (Copilot: `copilot/agents/*.agent.md`). Each runs on a fixed model.
-
-| Agent | Model | What it does |
-|---|---|---|
-| **code-agent** | Opus | Implements one part of a plan to the `quality-bar` standard, with a risk analysis and self-review. |
-| **code-review** | Opus | Read-only review of a change against `quality-bar` and its lessons; returns PASS/FAIL with severity-ranked findings and records new lessons in the global `quality-bar` store (its only writable files). |
-| **planning** | Opus | Breaks a plan into small, ordered, self-contained parts in `plan.md`, with per-part decisions (failure policy, state paths, bounds, tests) drawn from the `quality-bar` lessons, and lists open decisions for the user. |
-| **test-planner** | Opus | Plans test coverage (file, test names, intent) without writing code. |
-| **test-implementer** | Haiku | Writes tests from a test plan and runs them for the touched package. |
-| **test-writer** | Haiku | Writes test code from a test plan (no running). |
-| **test-runner** | Haiku | Runs existing test suites and reports pass/fail only, never fixes. |
-| **test-executor** | Haiku | Runs the tests relevant to a part and reports failures in detail. |
-| **git-runner** | Haiku | Executes git commands; destructive/shared-state ops (push, reset --hard, …) need explicit authorization. |
-| **os-agent** | Haiku | Executes shell/OS ops; destructive ops need explicit authorization; never starts long-running servers. |
-
-### Hooks
-- `claude/hooks/delegate-guard.sh` — `PreToolUse` hook on `Bash`. On the main thread it turns git, build/test/lint and shell commands into a permission prompt that nudges delegation to `git-runner`, `test-runner` or `os-agent` (Haiku). Bash calls inside subagents always pass. Add `NODELEGATE` to a command to skip the prompt. Needs `jq`.
-
-### Mods
-Claude Code UI mods in `claude/mods/`:
-- **tollasmode** — compact pane: model picker, activity bullets, plan steps, parallel subagents with live action and elapsed time, top skills and agents charts.
-- **featuremode** — live `/feature` status board pane (see above). Depends on `tollasmode`.
-
-### External plugins
-Third-party Claude Code plugins I use; install commands in [plugins.md](plugins.md).
-
-- **[caveman](https://github.com/juliusbrussee/caveman)** — ultra-compressed communication mode plus `cavecrew-*` subagents (investigator/builder/reviewer) for token-efficient delegation.
-- **[code security review](https://github.com/anthropics/claude-code-security-review)** — `comprehensive-review@claude-code-workflows` (architect-review, code-reviewer, security-auditor agents).
-- **code-simplifier** — Anthropic official plugin; cleans up recently modified code for clarity without changing behavior.
-
-## Installation
-
-### Claude Code
-
-Clone the repo:
-```bash
-git clone https://github.com/mxrpr/tollas-agent-kit
-cd tollas-agent-kit
-```
-
-Skills and agents, for all projects:
-```bash
-mkdir -p ~/.claude/skills ~/.claude/agents
-cp -r claude/skills/* ~/.claude/skills/
-cp claude/agents/*.md ~/.claude/agents/
-```
-For one project only, copy them into `<project>/.claude/skills/` and `<project>/.claude/agents/` instead.
-Run `/feature <plan.md | issue #>` in Claude Code to start the orchestrator.
-
-Hook (optional, needs `jq`):
 ```bash
 mkdir -p ~/.claude/hooks
 cp claude/hooks/delegate-guard.sh ~/.claude/hooks/ && chmod +x ~/.claude/hooks/delegate-guard.sh
 ```
-then add to `~/.claude/settings.json`:
+
+Then add this to `~/.claude/settings.json`:
+
 ```json
 "hooks": {
   "PreToolUse": [
@@ -213,80 +130,44 @@ then add to `~/.claude/settings.json`:
 }
 ```
 
-Mods (optional; `featuremode` needs `tollasmode`):
+Add `NODELEGATE` to a command to skip the reminder.
+
+### UI mods
+
 ```bash
 mkdir -p ~/.claude/mods
-cp -r claude/mods/tollasmode claude/mods/featuremode ~/.claude/mods/
-```
-Restart Claude Code to load them; `/featuremode` shows/hides the feature pane.
-
-External plugins: see [plugins.md](plugins.md).
-
-### GitHub Copilot
-
-`copilot/` holds the Copilot port of the agents, skills and the `/feature` and `/dev-pipeline`
-orchestrators. Details and the differences from the Claude version: [copilot/README.md](copilot/README.md).
-
-#### Copilot CLI (plugin)
-
-Install (once per machine):
-```bash
-copilot plugin install mxrpr/tollas-agent-kit:copilot
-copilot plugin list                 # shows: dev-agents (v1.0.0)
+cp -r claude/mods/dev-pipeline-mode claude/mods/colorsage ~/.claude/mods/
 ```
 
-Optional: the global guidelines are not part of the plugin; copy them yourself:
-```bash
-curl -fsSL https://raw.githubusercontent.com/mxrpr/tollas-agent-kit/main/copilot/copilot-instructions.md \
-  -o ~/.copilot/copilot-instructions.md
-```
+Restart Claude Code. Then:
 
-Use it (run `copilot` in your project):
+| Mod | What you get | Toggle |
+|---|---|---|
+| `dev-pipeline-mode` | a side pane with the model, plan steps, running agents and most-used skills | `/dev-pipeline-mode` |
+| `colorsage` | two color themes: calm Sage dark and warm Newspaper | `/colorsage`, `/colornewspaper` |
 
-| Goal | How |
+### Other plugins that work well with this kit
+
+Install commands are in [plugins.md](plugins.md).
+
+| Plugin | What it adds |
 |---|---|
-| Run a feature from a plan | `/feature docs/plans/login-rework.md` or `/feature 142` |
-| Plan → implement → review → test loop | `/dev-pipeline <plan or description>` |
-| List skills | `/skills` |
-| List / pick an agent | `/agent` |
-| Start a session as one agent | `copilot --agent code-review` |
-| One-off prompt to an agent | `copilot --agent test-runner -p "run the tests in ./api"` |
+| [caveman](https://github.com/juliusbrussee/caveman) | shorter, token-saving answers and helper agents |
+| [comprehensive-review](https://github.com/anthropics/claude-code-security-review) | a full, multi-agent review of a whole branch; its results feed `/learn-from-review` |
+| code-simplifier | cleans up recently changed code without changing what it does |
 
-Update: rerun the install command. Remove: `copilot plugin uninstall dev-agents`.
+## Update or remove
 
-#### VS Code (agent mode)
+- **Update:** `git pull` in the `tollas-agent-kit` folder, then run the `cp` commands from [Install](#install) again.
+- **Remove:** delete the copied files from `~/.claude/commands/`, `~/.claude/skills/`, `~/.claude/agents/` (and `~/.claude/hooks/`, `~/.claude/mods/` if you installed the extras).
 
-VS Code does not use the CLI plugin; copy the files instead.
+## More documentation
 
-Per repository (shared with the team):
-```bash
-git clone https://github.com/mxrpr/tollas-agent-kit /tmp/ccs
-mkdir -p .github
-cp -r /tmp/ccs/copilot/{agents,skills,prompts} .github/
-cp /tmp/ccs/copilot/copilot-instructions.md .github/   # skip if you already have one; merge by hand
-```
+| Document | Covers |
+|---|---|
+| [docs/dev-pipeline.md](docs/dev-pipeline.md) | `/dev-pipeline` step by step, with a diagram |
+| [docs/feature.md](docs/feature.md) | `/feature` phases, fix rounds and the files it keeps |
+| [docs/learning-loop.md](docs/learning-loop.md) | how review findings become lessons |
+| [plugins.md](plugins.md) | install commands for the other plugins |
 
-For all repositories (Linux; on macOS use `~/Library/Application Support/Code/User/prompts`):
-```bash
-mkdir -p ~/.copilot ~/.config/Code/User/prompts
-cp -r /tmp/ccs/copilot/skills ~/.copilot/
-cp /tmp/ccs/copilot/agents/*.agent.md /tmp/ccs/copilot/prompts/*.prompt.md ~/.config/Code/User/prompts/
-```
-
-Windows (PowerShell), all repositories:
-```powershell
-git clone https://github.com/mxrpr/tollas-agent-kit $env:TEMP\ccs
-New-Item -ItemType Directory -Force "$HOME\.copilot", "$env:APPDATA\Code\User\prompts" | Out-Null
-Copy-Item -Recurse -Force "$env:TEMP\ccs\copilot\skills" "$HOME\.copilot\"
-Copy-Item -Force "$env:TEMP\ccs\copilot\agents\*.agent.md", "$env:TEMP\ccs\copilot\prompts\*.prompt.md" "$env:APPDATA\Code\User\prompts\"
-```
-
-Then in Copilot Chat (Agent mode): `/feature <plan.md | issue #>` or `/dev-pipeline <plan>`. Agents
-appear in the agent picker. Agent skills and subagents may need enabling in VS Code settings
-(search "skills" and "subagent").
-
-#### Models
-
-Agents pin their model in the `model:` line (`Claude Opus 5.5 (copilot)`, `Claude Haiku 4.5 (copilot)`).
-If your account does not offer one, edit that line to an available model (`/model` in the CLI, the
-model picker in VS Code, shows what you have).
+**For a single project only:** copy the files into `<project>/.claude/commands/`, `<project>/.claude/skills/` and `<project>/.claude/agents/` instead of `~/.claude/`. Keep `quality-bar` in `~/.claude/skills/` in any case, because the lessons are stored there.
