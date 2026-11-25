@@ -18,8 +18,8 @@ for anything non-trivial).
 
 ## Workflow
 
-0. The `quality-bar` skill is preloaded. Its section 5 and the "Tests"
-   lessons in section 8 are the standard your tests must meet.
+0. The `quality-bar` skill is preloaded. Its section 5 is the standard
+   your tests must meet.
 1. Read the target source file(s) and any existing sibling test file for
    style/conventions (assertion style, fixture helpers, naming).
 2. Write each planned test. Match existing patterns exactly — don't

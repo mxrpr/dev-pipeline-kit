@@ -2,7 +2,7 @@
 
 Ready-made commands, skills and helper agents for **Claude Code**.
 
-Install it once, and Claude Code works like a small development team. A request is planned first. Then each part is written, tested and reviewed by its own helper agents, and you approve every step. Mistakes found in reviews are remembered, so they are not repeated.
+Install it once, and Claude Code works like a small development team. A request is planned first. Then each part is written, tested and reviewed by its own helper agents, and you approve every step.
 
 ## Contents
 
@@ -29,7 +29,7 @@ Type these two commands inside Claude Code:
 /plugin install devkit@dev-pipeline-kit
 ```
 
-Then run `/reload-plugins` (or restart Claude Code). The kit now works in all your projects. It installs as the plugin **devkit**, so its commands are `/devkit:dev-pipeline` and `/devkit:feature`, and its agents are named `devkit:code-agent`, `devkit:code-review` and so on. It leaves your own files in `~/.claude/` alone, with one exception: at session start it copies its `quality-bar` skill to `~/.claude/skills/quality-bar/` if that folder does not exist yet. That folder is the lesson store (see [How it learns](#how-it-learns)); it is yours, and plugin updates never overwrite it.
+Then run `/reload-plugins` (or restart Claude Code). The kit now works in all your projects. It installs as the plugin **devkit**, so its commands are `/devkit:dev-pipeline` and `/devkit:feature`, and its agents are named `devkit:code-agent`, `devkit:code-review` and so on. It leaves your own files in `~/.claude/` alone.
 
 To install it for one project only (shared with your team through `.claude/settings.json`), run in a terminal inside the project:
 
@@ -54,7 +54,7 @@ What happens:
 
 1. Claude turns the description or plan into a checklist of small parts in `plan.md`, and **stops**.
 2. You read the plan, answer any open questions, and say **go**.
-3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part, and runs the full test suite at the end.
+3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part. After the last part, a fresh reviewer checks the whole branch, then the full test suite runs.
 4. If something keeps failing, Claude stops and tells you instead of guessing.
 
 If the session is interrupted, run the same command again: it skips planning and continues at the first unchecked part of `plan.md`.
@@ -112,17 +112,15 @@ Thinking work runs on the strong model (Opus), test writing on Sonnet, and simpl
 
 | Skill | What it does |
 |---|---|
-| `quality-bar` | the standard all code must meet, plus the lessons learned from past reviews |
+| `quality-bar` | the standard all code must meet |
 | `feature` | the `/feature` command |
 | `commit-clean` | writes clean commit messages |
 | `create-worktree` | creates worktrees inside the project, under `.worktrees/` |
 | `csharp-style` | C# style rules |
-| `learn-from-review` | turns a finished full code review into lessons (`/learn-from-review`) |
-| `lessons-compact` | merges and trims the stored lessons (`/lessons-compact`), about once a month |
 
-### How it learns
+### Known traps
 
-Every review can add a short, general lesson (for example "a failed lookup never blanks a stored value"). Lessons are stored once in `~/.claude/skills/quality-bar/` and read before the next plan, the next code and the next review, in every project. The plugin seeds that folder from its own copy on first use (a `SessionStart` hook that needs a POSIX shell); after that only your reviews change it. How it works in detail: [docs/learning-loop.md](docs/learning-loop.md).
+`planning`, `code-agent` and `code-review` read the `CLAUDE.md` of each plugin or module a change touches: keep the known traps of an area there.
 
 ## Optional extras
 
@@ -157,7 +155,7 @@ Add `NODELEGATE` to a command to skip the reminder.
 
 ### Global guidelines
 
-`extras/CLAUDE.md` holds general coding guidelines, plus the rule that runs `/learn-from-review` automatically after a full review. Without it, run `/learn-from-review` yourself. To add it to your own global instructions (appends, never overwrites):
+`extras/CLAUDE.md` holds when to delegate to subagents and the no-AI-attribution rule for commits. To add it to your own global instructions (appends, never overwrites):
 
 ```bash
 cat extras/CLAUDE.md >> ~/.claude/CLAUDE.md
@@ -184,12 +182,13 @@ Install commands are in [plugins.md](plugins.md).
 | Plugin | What it adds |
 |---|---|
 | [caveman](https://github.com/juliusbrussee/caveman) | shorter, token-saving answers and helper agents |
-| [comprehensive-review](https://github.com/anthropics/claude-code-security-review) | a full, multi-agent review of a whole branch; its results feed `/learn-from-review` |
+| [comprehensive-review](https://github.com/anthropics/claude-code-security-review) | a full, multi-agent review of a whole branch |
 | code-simplifier | cleans up recently changed code without changing what it does |
 
 ## Update or remove
 
 - **Update:** `/plugin marketplace update dev-pipeline-kit`, then `/plugin update devkit@dev-pipeline-kit`. Or turn on auto-update for the marketplace in `/plugin` → Marketplaces.
+- **Upgrading from 1.x:** 2.0 drops the lesson store, `/learn-from-review` and `/lessons-compact`. Earlier versions copied `quality-bar` to `~/.claude/skills/quality-bar/`; the plugin no longer uses that copy, so delete it unless you keep your own skill there.
 - **Remove:** `/plugin uninstall devkit@dev-pipeline-kit`. Remove the extras by hand if you installed them: `~/.claude/hooks/delegate-guard.sh` and its `settings.json` entry, the mods in `~/.claude/mods/`, and the guidelines you appended to `~/.claude/CLAUDE.md`.
 
 ## License
@@ -202,5 +201,4 @@ MIT, see [LICENSE](LICENSE).
 |---|---|
 | [docs/dev-pipeline.md](docs/dev-pipeline.md) | `/dev-pipeline` step by step, with a diagram |
 | [docs/feature.md](docs/feature.md) | `/feature` phases, fix rounds and the files it keeps |
-| [docs/learning-loop.md](docs/learning-loop.md) | how review findings become lessons |
 | [plugins.md](plugins.md) | install commands for the other plugins |

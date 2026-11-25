@@ -14,7 +14,7 @@ Source: `claude/commands/dev-pipeline.md`.
 ```mermaid
 flowchart TD
     IN(["/dev-pipeline plan or description"]) --> INV["Gather codebase facts once<br/>(inline or one investigation pass)"]
-    INV --> PL["planning (Opus)<br/>reads quality-bar lessons<br/>writes plan.md: parts + Decisions + Open decisions"]
+    INV --> PL["planning (Opus)<br/>writes plan.md: parts + Decisions,<br/>Run-level decisions, Open decisions"]
     PL --> G1{{"⏸ you review the plan,<br/>answer open decisions, say go"}}
     G1 --> FAST{"Part touches<br/>production code?"}
 
@@ -28,7 +28,7 @@ flowchart TD
         SMALL -->|no| TP["b · test-planner (Opus)"] --> TI["test-implementer (Sonnet)<br/>writes + runs the tests"]
         TI -->|"red: fix by code-agent or<br/>test-implementer, test-runner reruns"| IMP
         INL --> REV
-        TI -->|green| REV["c · code-review (Opus)<br/>gets the changed + new file list<br/>vs quality-bar + lessons, records lessons"]
+        TI -->|green| REV["c · fresh code-review (Opus)<br/>gets the changed + new file list<br/>vs quality-bar + module CLAUDE.md traps"]
         REV -->|"FAIL: findings to the SAME fixer,<br/>tests rerun, review again"| IMP
     end
 
@@ -36,22 +36,26 @@ flowchart TD
     EDIT --> NEXT
     DONE --> NEXT{{"⏸ continue with the next part?"}}
     NEXT -->|"more parts"| FAST
-    NEXT -->|"last part"| END["full test suite + lint,<br/>then summary"]
+    NEXT -->|"last part"| BR["branch review: fresh code-review<br/>on the whole branch diff"]
+    BR -->|"Critical / High / Medium"| NEWP["new part in plan.md"] --> FAST
+    BR -->|PASS| END["full test suite + lint,<br/>then summary"]
     PART -. "still failing after 2 fix rounds" .-> STOP{{"⏸ stop and report"}}
 ```
 
 ## Rules that make it cheap and reliable
-- **Plan first, code on your go.** The planning agent always writes `plan.md` (a plan file you pass in is read, never overwritten) as a checklist (`- [ ] Part N: … — files`) with a `Decisions:` list per part and an `## Open decisions` section. No implementation starts until you say so.
+- **Plan first, code on your go.** The planning agent always writes `plan.md` (a plan file you pass in is read, never overwritten) as a checklist (`- [ ] Part N: … — files`) with a `Decisions:` list per part, a `## Run-level decisions` section (the deadline that bounds a run and the worst case of all retries and waits, one failure policy, shared state across parts) and an `## Open decisions` section. No implementation starts until you say so.
 - **`plan.md` is the truth.** Its checkboxes say where work stopped, so running the command again skips planning and resumes at the first unchecked part, not from agent memory.
-- **One agent per role, resumed.** Each role (`code-agent`, `code-review`, `test-planner`, `test-implementer`, `test-runner`) is spawned once and later parts resume it with `SendMessage`, so it keeps the plan and conventions in context. Every ~5 parts the agent writes a condensed summary and a fresh agent continues from it, which caps context growth.
-- **Reviews stay independent.** A resumed reviewer must re-check the current diff each pass, not repeat its earlier verdict.
+- **One agent per role, resumed.** Each role (`code-agent`, `test-planner`, `test-implementer`, `test-runner`) is spawned once and later parts resume it with `SendMessage`, so it keeps the plan and conventions in context. Every ~5 parts the agent writes a condensed summary and a fresh agent continues from it, which caps context growth.
+- **Reviews stay independent.** `code-review` is spawned fresh for each part, so it is not anchored on earlier verdicts; within a part it is resumed for re-checks, and each pass re-checks the current diff instead of repeating its verdict.
 - **One part at a time.** Parts run one after another, even independent ones: parallel agents in one checkout would overwrite each other's files and mix their diffs.
 - **Facts gathered once.** Codebase investigation happens once and is handed to the planner, not repeated by a research agent and the planner side by side.
 - **Docs-only fast path.** A part that changes no production code (docs, a recorded decision, issue text) skips review and tests.
 - **Routing still applies.** The orchestrator never runs git, build or test commands itself; they go to `git-runner`, `os-agent` or `test-runner`.
 - **Tests before review.** The reviewer sees the finished code and its tests, the latest test report, and the explicit list of changed and new files (new files are not in `git diff`).
-- **Tests that can fail.** `test-planner` (which reads the `quality-bar` lessons) covers failure branches, boundaries and security cases, and marks tests that must fail without the change; `test-implementer` proves they do (red check) and never edits an expected value to make a test pass.
+- **Tests that can fail.** `test-planner` covers failure branches, boundaries and security cases, and marks tests that must fail without the change; `test-implementer` proves they do (red check) and never edits an expected value to make a test pass.
 - **Done means green and reviewed.** A part is checked off in `plan.md` only after its tests pass and the review passes.
+- **Fix rounds stay small.** A fix fixes only Critical, High and Medium findings the branch introduced. Design debt and pre-existing issues go to the plan's Follow-ups section; a fix that needs a new mechanism (budget, clock, flag, test seam, new type) goes back to `planning`.
+- **Branch review at the end.** After the last part a fresh `code-review` checks the whole branch diff for what no single part could see: run-level time limits against every deadline, one failure policy across components, and state shared between parts. A Critical, High or Medium finding becomes a new part.
 - **Stop on repeated failure.** A part gets at most 2 fix rounds, test and review failures counted together; then the pipeline stops with a status report.
 
 ## Agent roster
@@ -66,10 +70,14 @@ flowchart TD
 | Test reruns after a fix | `test-runner` | Haiku |
 | Git / shell | `git-runner`, `os-agent` | Haiku |
 
-## Quality and learning
-Before each review, `os-agent` runs the build and lint, so the reviewer judges tooling from a real run, not from `code-agent`'s summary; it also reads the code before that summary. `test-planner` writes its cases from the plan part first and reads the code second. The planner's `Lessons:` line per part names the catalog sections `code-agent` reads.
+## Quality
+Before each review, `os-agent` runs the build and lint, so the reviewer judges tooling from a real run, not from `code-agent`'s summary; it also reads the code before that summary. `test-planner` writes its cases from the plan part first and reads the code second.
 
-`planning`, `code-agent`, `test-implementer` and `code-review` all preload the `quality-bar` skill, including its lessons from past reviews. `code-review` records new lessons itself (the orchestrator only relays its "Lessons recorded" list). If you run `/comprehensive-review:full-review` on the result, scope it to the plan's files and then run `/learn-from-review`. See [learning-loop.md](learning-loop.md).
+`planning`, `code-agent`, `test-implementer` and `code-review` all preload the `quality-bar` skill. `planning`, `code-agent` and `code-review` also read the `CLAUDE.md` of each plugin or module the change touches, which lists the known traps of that area.
+
+`code-review` fails a part on any Critical, High or Medium finding. `code-agent` must hand off zero Critical and High and no Medium its part introduces; it does not add a mechanism only to prevent a Medium, and lists design-debt Mediums in its summary as follow-ups. When a change adds retries, waits, loops or timeouts, the reviewer computes the worst case against the deadline of the caller, also outside the diff.
+
+If you run `/comprehensive-review:full-review` on the result, the pipeline passes it the plan's files as scope, the `quality-bar` severities, and asks it to tag each finding `introduced` or `pre-existing`. Judge the branch by Critical + High + introduced Medium, not by the total count.
 
 ## `/dev-pipeline` vs `/feature`
 
@@ -79,4 +87,5 @@ Before each review, `os-agent` runs the build and lint, so the reviewer judges t
 | Planning | `planning` agent writes `plan.md` | never plans; the plan is input |
 | Progress state | checkboxes in `plan.md` | `.claude/feature/status.md` + per-agent logs |
 | Order per part | implement → test → review | implement → test → review |
+| End of run | branch review, then full suite + lint | full suite + lint, then gated commit/push/PR |
 | Worktree, commit, PR | not handled | creates branch/worktree; gated commit/push/PR |
