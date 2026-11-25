@@ -27,6 +27,9 @@ For each function/module in scope:
 - List of test names with a one-line intent each (happy path, each edge case, each error branch).
 - Beyond the happy path, cover every failure branch, the boundaries (empty, maximum, limits) and the security cases that apply (bad input, missing permission). Every `Decisions:` line of the part in plan.md that names a test or a failure policy is a required case.
 - Mark each test that must fail without the production change as `must-fail-without-change`: the regression test of a bug fix, and at least one test per new branch of new behaviour.
+- **Guard table:** list every new or changed guard in the change (condition, filter, comparison, boundary, branch) as `guard (file:line) → test that goes red when it is removed or flipped`. A guard with no such test gets a new case. A test that would stay green both ways does not count.
+- Fixtures hold at least two of each thing the code groups, keys or filters by (two groups, two keys, two owners, two pages), with different values in every paired column, so a swapped, merged or cross-joined result fails.
+- Expected values are literals written in the test. Never take them from the code under test (its constants, its mapping, its helper).
 - Any fixtures/mocks/helpers the implementer will need and where to find existing ones to reuse.
 - Flag cases that are genuinely hard to test (e.g. need network mock, time control) so the implementer isn't surprised.
 

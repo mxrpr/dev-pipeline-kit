@@ -54,7 +54,7 @@ What happens:
 
 1. Claude turns the description or plan into a checklist of small parts in `plan.md`, and **stops**.
 2. You read the plan, answer any open questions, and say **go**.
-3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Every part gets its own test plan, test writing and test run; documentation-only parts skip review and tests. Claude asks before starting the next part. After the last part, a fresh reviewer checks the whole branch, then the full test suite runs.
+3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Every part gets its own test plan, test writing and test run; documentation-only parts skip review and tests. Claude asks before starting the next part. After the last part, three fresh reviewers check the whole branch (state, scale, tests), then the full test suite runs.
 4. If something keeps failing, Claude stops and tells you instead of guessing.
 
 If the session is interrupted, run the same command again: it skips planning and continues at the first unchecked part of `plan.md`.
@@ -120,7 +120,7 @@ Thinking work runs on the strong model (Opus), test writing on Sonnet, and simpl
 
 ### Known traps
 
-`planning`, `code-agent` and `code-review` read the `CLAUDE.md` of each plugin or module a change touches: keep the known traps of an area there.
+`planning`, `code-agent` and `code-review` read the `CLAUDE.md` of each module or package a change touches: keep the known traps of an area there.
 
 ## Optional extras
 

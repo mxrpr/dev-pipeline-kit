@@ -42,6 +42,8 @@ Critical/High if violated:
 - [ ] Resources (files, connections, locks, handles, subscriptions) are released on every path, including error paths.
 - [ ] Partial failures leave data consistent (transactions, rollback, or idempotent retry).
 - [ ] Timeouts on all network and external calls.
+- [ ] State kept between runs (a skip rule, dedup key, cache, watermark, "already stored" check) is safe after a failed or partial earlier run and when the state flips in either direction: something proves the earlier run was complete, and something repairs a wrong skip.
+- [ ] Retry policy (count, wait, total time) is chosen for the call, not left at a default.
 
 ## 3. Concurrency and performance
 
@@ -52,6 +54,7 @@ Critical/High if violated:
 - [ ] No N+1 queries or calls inside loops that could be batched.
 - [ ] Collections, caches, queues and buffers are bounded; large results are paginated or streamed.
 - [ ] No needless quadratic work on inputs that can grow.
+- [ ] Scale is stated in numbers, not prose. A loop of external calls: calls per run and per minute against the provider's documented limit. A query: rows read today and at 10x the data, the index that serves it, its timeout.
 
 ## 4. Code quality and architecture
 
@@ -71,12 +74,16 @@ High if violated for security-critical or core logic, otherwise Medium:
 - [ ] Tests cover the error paths and edge cases from sections 1-3, not only the happy path.
 - [ ] Tests assert behaviour, not implementation details; assertions are specific.
 - [ ] Tests are isolated and deterministic (no real network, no sleep-based timing, no order dependence).
+- [ ] Every new or changed guard (condition, filter, comparison, boundary, branch) has a test that goes red when the guard is removed or flipped.
+- [ ] Fixtures hold at least two of each thing the code groups, keys or filters by (two groups, two keys, two owners, two pages), so a swapped, merged or cross-joined result fails.
+- [ ] Expected values are literals, never computed by or copied from the code under test.
 
 ## 6. Documentation
 
 Medium unless it hides a breaking change (then High):
 - [ ] Non-obvious logic, invariants and security assumptions are commented (why, not what).
 - [ ] Public functions/types follow the project's doc comment convention.
+- [ ] Every claim in a comment or doc (what a function guarantees, a limit, a cost, who calls it) is true of the code as it is now, also after fix rounds.
 - [ ] README, API docs, config docs and changelog updated when behaviour, setup or interfaces change.
 
 ## 7. Tooling

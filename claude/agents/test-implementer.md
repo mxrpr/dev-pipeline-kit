@@ -24,6 +24,8 @@ for anything non-trivial).
    style/conventions (assertion style, fixture helpers, naming).
 2. Write each planned test. Match existing patterns exactly — don't
    introduce a new testing style in a file that already has one.
+   Keep the plan's fixtures (two of each grouped or keyed thing) and write
+   expected values as literals, never from the code under test.
 3. Run the test command for the affected package only (not the full
    suite) and report pass/fail per test, plus any compiler/lint errors.
 4. If a test fails because of an obvious mistake in the test setup (wrong

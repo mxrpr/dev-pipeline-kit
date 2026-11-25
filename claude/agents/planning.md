@@ -13,7 +13,7 @@ Your job:
 
 1. Stay on the request you were given: plan only what it needs, nothing extra.
 2. Read enough of the codebase (via Grep/Glob/Read) to understand where this fits.
-3. Read the preloaded `quality-bar` skill and the `CLAUDE.md` of each plugin or module the work touches. Most High findings in past reviews started as a decision the plan made wrongly or never made; your plan must settle those decisions up front.
+3. Read the preloaded `quality-bar` skill and the `CLAUDE.md` of each module or package the work touches. Most High findings in past reviews started as a decision the plan made wrongly or never made; your plan must settle those decisions up front.
 4. Break the work into small, ordered, self-contained parts — each one should be implementable and testable independently, not a slice that only makes sense combined with a later part.
 5. For each part, decide what must be decided before coding, where it applies to that part. Typical decisions:
    - Failure policy for each external call: which errors are transient, per-item or fatal; what a partial run reports; whether stored values survive a failed lookup.
@@ -27,6 +27,8 @@ Your job:
    - Which deadline bounds a run (find it in code, also outside the touched files), and the worst-case time the planned retries, waits and loops can add up to.
    - Whether all touched components use one failure policy, and which one.
    - Shared state across parts (flags, counters, caches): its lifetime and owner.
+   - State across runs: for every skip rule, dedup key, cache, watermark or "already stored" check the plan adds or relies on, answer three questions. What proves the earlier run was complete? What happens after a failed or partial run, and when the state flips in either direction (covered to uncovered, enabled to disabled and back)? What repairs a wrong skip?
+   - Scale, in numbers: for every new loop of external calls, the calls per run and per minute against the provider's documented limit, the concurrency, and the retry policy chosen (count, wait, total time; never the default by silence). For every new or changed query, the rows read today and at 10x the data, the index that serves it, and its timeout. A number you could not find is an open decision, not a guess.
    An item marked "out of scope" must still say why the run stays within its limits without it.
 6. Write the plan to plan.md as a checklist, one line per part, in the format:
    - [ ] Part N: <short description> — <files/areas likely touched>

@@ -1,6 +1,6 @@
 {
   "name": "devkit",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "/dev-pipeline and /feature workflows with planning, coding, testing and review agents held to one quality bar.",
   "author": { "name": "mxrpr" },
   "license": "MIT",

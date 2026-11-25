@@ -24,7 +24,7 @@ Do not edit any file until Phases 1-3 are complete.
 ## Phase 2: Understand the wider context (no code changes yet)
 
 4. Study the preloaded `quality-bar` skill. It is the standard you build to.
-5. Read the `CLAUDE.md` of each plugin or module you will touch: it lists the known traps of that area.
+5. Read the `CLAUDE.md` of each module or package you will touch: it lists the known traps of that area.
 6. Read CLAUDE.md and any project docs relevant to the area you will touch.
 7. Find every place affected by the change: the code you will edit, its callers, its dependencies, related tests, config, and data formats. Use Grep/Glob to trace usages; do not assume.
 8. Understand how the affected code works today: data flow, error handling, invariants, and edge cases. Run the existing tests or the code itself if that helps confirm your understanding.
@@ -37,9 +37,10 @@ Do not edit any file until Phases 1-3 are complete.
 12. Write a risk analysis before coding. Answer each briefly, or write "n/a" with a reason:
     - **Untrusted input:** what data enters from users, network, files, env or other services, and where is it validated?
     - **Trust boundaries:** who may call this code, and where are authentication and authorization enforced?
-    - **Failure modes:** what can fail (I/O, network, parsing, DB, external API, timeouts), and how is each failure handled?
+    - **Failure modes:** what can fail (I/O, network, parsing, DB, external API, timeouts), and how is each failure handled? Which retry policy (count, wait, total time) did you choose for each call, and why not the default?
+    - **State across runs:** for each skip rule, dedup key, cache, watermark or "already stored" check: what proves the earlier run was complete, what happens after a failed or partial run or when the state flips either way, and what repairs a wrong skip?
     - **Concurrency:** is any state shared, and how is it protected?
-    - **Performance:** what are the hot paths and input sizes, and are there loops over queries/calls or unbounded collections?
+    - **Performance:** in numbers, not prose. For a loop of external calls: calls per run and per minute against the provider's documented limit. For a query: rows read today and at 10x the data, the index that serves it, its timeout. Also: any unbounded collection?
     - **Compatibility:** does any public API, data format or config change, and who depends on it?
     - **Tests:** which cases (happy path, edge cases, error paths, security cases) prove the change works?
 13. Check the plan against the problem from step 1. Every step must serve that problem. Drop anything that does not.
@@ -63,7 +64,7 @@ Take the first option that fully works:
 
 18. Build, then run the relevant tests. Fix any failures you caused.
 19. Run the project's linters, formatters and static analyzers found in step 10 on the changed files. Fix every new warning or error you introduced. If the project has none, say so in your summary.
-20. Review your own diff against every section of the quality bar, line by line. Do it as a hostile reviewer would: for each changed function, ask how it can be broken by bad input, failure of a dependency, concurrent calls, or large data. Fix every Critical, High and Medium issue you find.
+20. Review your own diff against every section of the quality bar, line by line. Do it as a hostile reviewer would: for each changed function, ask how it can be broken by bad input, failure of a dependency, concurrent calls, or large data. Fix every Critical, High and Medium issue you find. Then re-read every comment and doc line you wrote or that sits next to code you changed: each claim must be true of the final code.
 21. Re-run tests and linters after those fixes.
 22. Confirm the change solves the problem from step 1, not only that the code compiles.
 

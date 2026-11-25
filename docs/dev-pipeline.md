@@ -33,7 +33,7 @@ flowchart TD
     EDIT --> NEXT
     DONE --> NEXT{{"⏸ continue with the next part?"}}
     NEXT -->|"more parts"| FAST
-    NEXT -->|"last part"| BR["branch review: fresh code-review<br/>on the whole branch diff"]
+    NEXT -->|"last part"| BR["branch review: 3 fresh code-reviews in parallel<br/>state · scale · tests, on the whole branch diff"]
     BR -->|"Critical / High / Medium"| NEWP["new part in plan.md"] --> FAST
     BR -->|PASS| END["full test suite + lint,<br/>then summary"]
     PART -. "still failing after 2 fix rounds" .-> STOP{{"⏸ stop and report"}}
@@ -53,7 +53,9 @@ flowchart TD
 - **Tests that can fail.** `test-planner` covers failure branches, boundaries and security cases, and marks tests that must fail without the change; `test-implementer` proves they do (red check) and never edits an expected value to make a test pass.
 - **Done means green and reviewed.** A part is checked off in `plan.md` only after its tests pass and the review passes.
 - **Fix rounds stay small.** A fix fixes only Critical, High and Medium findings the branch introduced. Design debt and pre-existing issues go to the plan's Follow-ups section; a fix that needs a new mechanism (budget, clock, flag, test seam, new type) goes back to `planning`.
-- **Branch review at the end.** After the last part a fresh `code-review` checks the whole branch diff for what no single part could see: run-level time limits against every deadline, one failure policy across components, and state shared between parts. A Critical, High or Medium finding becomes a new part.
+- **Branch review at the end.** After the last part three fresh `code-review` agents check the whole branch diff in parallel, each with one lens: correctness and state (interactions between parts, one failure policy, state across runs, claims in comments and docs), scale and limits (worst-case time against every deadline, call rates against provider limits, rows at 10x), and tests (every guard has a test that goes red without it). A Critical, High or Medium finding becomes a new part.
+- **Guards have tests.** `test-planner` writes a guard table (each new condition, filter or branch → the test that goes red when it is removed or flipped), with fixtures of two of each grouped thing and literal expected values; `code-review` spot-checks it.
+- **State across runs and numbers in the plan.** The plan's run-level decisions answer, for every skip rule, dedup key, cache or watermark, what proves the earlier run was complete, what happens after a failed or partial run, and what repairs a wrong skip. External call loops and queries are planned with numbers: calls per minute against the provider's limit, rows at 10x, index, timeout, chosen retry policy.
 - **Stop on repeated failure.** A part gets at most 2 fix rounds, test and review failures counted together; then the pipeline stops with a status report.
 
 ## Agent roster
@@ -71,7 +73,7 @@ flowchart TD
 ## Quality
 Before each review, `os-agent` runs the build and lint, so the reviewer judges tooling from a real run, not from `code-agent`'s summary; it also reads the code before that summary. `test-planner` writes its cases from the plan part first and reads the code second.
 
-`planning`, `code-agent`, `test-implementer` and `code-review` all preload the `quality-bar` skill. `planning`, `code-agent` and `code-review` also read the `CLAUDE.md` of each plugin or module the change touches, which lists the known traps of that area.
+`planning`, `code-agent`, `test-implementer` and `code-review` all preload the `quality-bar` skill. `planning`, `code-agent` and `code-review` also read the `CLAUDE.md` of each module or package the change touches, which lists the known traps of that area.
 
 `code-review` fails a part on any Critical, High or Medium finding. `code-agent` must hand off zero Critical and High and no Medium its part introduces; it does not add a mechanism only to prevent a Medium, and lists design-debt Mediums in its summary as follow-ups. When a change adds retries, waits, loops or timeouts, the reviewer computes the worst case against the deadline of the caller, also outside the diff.
 
