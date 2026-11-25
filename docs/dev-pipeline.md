@@ -1,6 +1,6 @@
 # `/dev-pipeline`: the main workflow
 
-`/dev-pipeline` is the everyday way to build a change: it **plans, then implements, tests and reviews part by part**, with you approving the plan and each next part. Use it for anything from a bug fix to a multi-part feature. (`/feature`, see [feature.md](feature.md), is the heavier variant for executing a plan someone already wrote, with a status board on disk.)
+`/dev-pipeline` is the everyday way to build a change: it **plans, then implements, tests and reviews part by part**, with you approving the plan and each next part. Use it for anything from a bug fix to a multi-part feature. (`/feature`, see [feature.md](feature.md), is the variant for executing a plan someone already wrote, with a status board on disk.)
 
 Source: `claude/commands/dev-pipeline.md`.
 
@@ -23,11 +23,8 @@ flowchart TD
 
     subgraph PART [" per part "]
         direction TB
-        IMP["a · code-agent (Opus)<br/>implements the part,<br/>lists changed + new files"] --> SMALL{"Small part<br/>(1-3 files, tests in plan)?"}
-        SMALL -->|yes| INL["code-agent already wrote<br/>and ran the tests in step a"]
-        SMALL -->|no| TP["b · test-planner (Opus)"] --> TI["test-implementer (Sonnet)<br/>writes + runs the tests"]
+        IMP["a · code-agent (Opus)<br/>implements the part,<br/>lists changed + new files"] --> TP["b · test-planner (Opus)"] --> TI["test-implementer (Sonnet)<br/>writes + runs the tests"]
         TI -->|"red: fix by code-agent or<br/>test-implementer, test-runner reruns"| IMP
-        INL --> REV
         TI -->|green| REV["c · fresh code-review (Opus)<br/>gets the changed + new file list<br/>vs quality-bar + module CLAUDE.md traps"]
         REV -->|"FAIL: findings to the SAME fixer,<br/>tests rerun, review again"| IMP
     end
@@ -52,6 +49,7 @@ flowchart TD
 - **Docs-only fast path.** A part that changes no production code (docs, a recorded decision, issue text) skips review and tests.
 - **Routing still applies.** The orchestrator never runs git, build or test commands itself; they go to `git-runner`, `os-agent` or `test-runner`.
 - **Tests before review.** The reviewer sees the finished code and its tests, the latest test report, and the explicit list of changed and new files (new files are not in `git diff`).
+- **Full test steps for every part.** Each part that changes behavior gets a `test-planner` plan and `test-implementer` tests, whatever its size.
 - **Tests that can fail.** `test-planner` covers failure branches, boundaries and security cases, and marks tests that must fail without the change; `test-implementer` proves they do (red check) and never edits an expected value to make a test pass.
 - **Done means green and reviewed.** A part is checked off in `plan.md` only after its tests pass and the review passes.
 - **Fix rounds stay small.** A fix fixes only Critical, High and Medium findings the branch introduced. Design debt and pre-existing issues go to the plan's Follow-ups section; a fix that needs a new mechanism (budget, clock, flag, test seam, new type) goes back to `planning`.
@@ -63,7 +61,7 @@ flowchart TD
 | Step | Agent | Model |
 |---|---|---|
 | Plan | `planning` | Opus |
-| Implement (and small-part tests) | `code-agent` | Opus |
+| Implement | `code-agent` | Opus |
 | Review | `code-review` | Opus |
 | Test plan | `test-planner` | Opus |
 | Test code and run | `test-implementer` | Sonnet |

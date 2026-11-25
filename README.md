@@ -54,7 +54,7 @@ What happens:
 
 1. Claude turns the description or plan into a checklist of small parts in `plan.md`, and **stops**.
 2. You read the plan, answer any open questions, and say **go**.
-3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Small parts are tested by the agent that wrote them; documentation-only parts skip review and tests. Claude asks before starting the next part. After the last part, a fresh reviewer checks the whole branch, then the full test suite runs.
+3. Each part is written by one agent, tested, then reviewed by another. A part counts as done only when its tests pass and the review passes. Every part gets its own test plan, test writing and test run; documentation-only parts skip review and tests. Claude asks before starting the next part. After the last part, a fresh reviewer checks the whole branch, then the full test suite runs.
 4. If something keeps failing, Claude stops and tells you instead of guessing.
 
 If the session is interrupted, run the same command again: it skips planning and continues at the first unchecked part of `plan.md`.
@@ -85,7 +85,7 @@ Both break the work into parts and hand each part to helper agents. The differen
 | **Commit, push, pull request** | not handled | each one done only after you approve it separately |
 | **Progress tracking** | checkboxes in `plan.md` | a status board in `.claude/feature/status.md`, plus one log file per agent |
 | **When it stops** | after 2 fix rounds on a part (test and review failures together), it stops and reports | after 3 failed fix rounds, the part is marked blocked and you decide |
-| **Speed** | lighter: small parts test themselves, documentation-only parts skip review and tests | heavier: every part gets the full test-planning, test-writing and test-running steps |
+| **Speed** | every part gets the full test-planning, test-writing and test-running steps; documentation-only parts skip review and tests | every part gets the full test-planning, test-writing and test-running steps |
 
 Both pick up where they stopped if the session is interrupted: `/dev-pipeline` from `plan.md`, `/feature` from `.claude/feature/status.md`.
 
